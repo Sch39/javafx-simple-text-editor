@@ -10,7 +10,7 @@ public class EditorController implements IController<EditorComponent> {
 
     public EditorController(AppContext ctx){
         this.ctx = ctx;
-        this.editorComponent = new EditorComponent();
+        this.editorComponent = new EditorComponent(ctx.getEditorTextArea());
     }
 
     @Override
