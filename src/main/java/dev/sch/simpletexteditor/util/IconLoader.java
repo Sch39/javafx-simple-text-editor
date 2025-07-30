@@ -12,7 +12,6 @@ public class IconLoader {
     public static ImageView getIcon(String filename, double size){
         try {
             InputStream is = SimpleTextEditorApp.class.getResourceAsStream(ICONS_PATH+filename);
-            System.out.println("class: "+SimpleTextEditorApp.class.getResource(""));
             if (is == null){
                 System.out.println("Ikon tidak ditemukan, file: "+ICONS_PATH+filename);
                 return null;

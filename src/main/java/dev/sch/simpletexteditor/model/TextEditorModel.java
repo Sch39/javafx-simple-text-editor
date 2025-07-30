@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class TextEditorModel {
-    private final String DEFAULT_NEW_FILE_NAME = "file baru";
+    private final String DEFAULT_NEW_FILE_NAME = "new file";
     private final StringProperty currentFileName = new SimpleStringProperty(DEFAULT_NEW_FILE_NAME);
     private final StringProperty editorContent = new SimpleStringProperty("");
     private final BooleanProperty fileModified = new SimpleBooleanProperty(false);

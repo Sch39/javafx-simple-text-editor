@@ -20,6 +20,6 @@ public class EditorController implements IController<EditorComponent> {
 
     @Override
     public void initialize() {
-
+        editorComponent.getEditorTextArea().textProperty().bindBidirectional(ctx.getModel().editorContentProperty());
     }
 }
