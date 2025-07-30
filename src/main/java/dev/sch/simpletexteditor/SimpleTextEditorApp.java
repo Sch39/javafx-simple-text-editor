@@ -70,9 +70,6 @@ public class SimpleTextEditorApp extends Application {
         stage.setScene(scene);
         stage.show();
 
-        System.out.println("Before navigate");
-        Thread.sleep(2000);
-        System.out.println("after navigate");
         router.navigate(Routes.HOME);
     }
 
