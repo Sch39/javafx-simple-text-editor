@@ -3,11 +3,15 @@ package dev.sch.simpletexteditor.controller.component;
 import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.ui.components.ToolbarComponent;
 import dev.sch.simpletexteditor.context.AppContext;
+import lombok.Setter;
 
 
 public class ToolbarController implements IController<ToolbarComponent> {
     private final AppContext ctx;
     private final ToolbarComponent toolbar;
+
+    @Setter
+    private Runnable onNewFileRequested;
 
     public ToolbarController(AppContext ctx){
         this.ctx = ctx;
@@ -27,7 +31,7 @@ public class ToolbarController implements IController<ToolbarComponent> {
     }
 
     private void bindButtons() {
-        toolbar.getSaveButton().disableProperty().bind(ctx.getModel().fileModifiedProperty().not());
+        toolbar.getSaveButton().disableProperty().bind(ctx.getEditorModel().fileModifiedProperty().not());
 
         toolbar.getUndoButton().disableProperty().bind(ctx.getEditorTextArea().undoableProperty().not());
         toolbar.getRedoButton().disableProperty().bind(ctx.getEditorTextArea().redoableProperty().not());
@@ -39,14 +43,11 @@ public class ToolbarController implements IController<ToolbarComponent> {
 
 
         toolbar.getNewFileButton().setOnAction(e -> {
-            if (ctx.getModel().fileModifiedProperty().get()) {
-                System.out.println("saving file");
-                // TODO: Prompt user to save before clearing
-            } else {
-                ctx.getModel().newFile();
-//                ctx.getEditorTextArea().clear();
+            if (onNewFileRequested != null) {
+                onNewFileRequested.run();
             }
         });
 
     }
+
 }

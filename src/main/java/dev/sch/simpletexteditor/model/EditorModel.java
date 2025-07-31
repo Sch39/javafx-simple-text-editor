@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class TextEditorModel {
+public class EditorModel {
     private final String DEFAULT_NEW_FILE_NAME = "new file";
     private final StringProperty currentFileName = new SimpleStringProperty(DEFAULT_NEW_FILE_NAME);
     private final StringProperty editorContent = new SimpleStringProperty("");
@@ -29,7 +29,7 @@ public class TextEditorModel {
 
     private String initialContent = "";
 
-    public TextEditorModel(){
+    public EditorModel(){
         editorContent.addListener((obs, oldVal, newVal)->{
             fileModified.set(!newVal.equals(initialContent));
         });
@@ -47,6 +47,10 @@ public class TextEditorModel {
         return fileModified;
     }
 
+    public String getCurrentFileName(){return currentFileName.get();}
+    public String getEditorContent(){return editorContent.get();}
+    public boolean getFileModified(){return fileModified.get();}
+
     public void setCurrentFilePath(Path currentFilePath) {
         this.currentFilePath = currentFilePath;
         if (currentFilePath != null){
@@ -58,7 +62,8 @@ public class TextEditorModel {
 
     //    sync
     public void newFile(){
-        setCurrentDirectory(null);
+//        setCurrentDirectory(null);
+        setCurrentFilePath(null);
         editorContent.set("");
         initialContent = "";
         fileModified.set(false);

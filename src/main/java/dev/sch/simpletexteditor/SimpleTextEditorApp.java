@@ -3,14 +3,11 @@ package dev.sch.simpletexteditor;
 import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.core.Router;
 import dev.sch.simpletexteditor.router.Routes;
-import dev.sch.simpletexteditor.ui.components.ToolbarComponent;
-import dev.sch.simpletexteditor.model.TextEditorModel;
+import dev.sch.simpletexteditor.model.EditorModel;
 import javafx.application.Application;
-import javafx.beans.binding.Bindings;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -20,7 +17,7 @@ import java.io.IOException;
 
 public class SimpleTextEditorApp extends Application {
 //    model
-    private TextEditorModel model = new TextEditorModel();
+    private EditorModel model = new EditorModel();
 
 //    ui
     private TextArea editorTextArea;

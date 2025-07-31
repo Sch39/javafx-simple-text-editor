@@ -5,10 +5,12 @@ import dev.sch.simpletexteditor.ui.components.StatusBarComponent;
 import dev.sch.simpletexteditor.context.AppContext;
 
 public class StatusBarController implements IController<StatusBarComponent> {
+    private final AppContext ctx;
 private final StatusBarComponent statusBarComponent;
 
     public StatusBarController(AppContext ctx){
-        this.statusBarComponent = new StatusBarComponent("ready", false);
+        this.statusBarComponent = new StatusBarComponent("Ready", false);
+        this.ctx = ctx;
     }
 
 
@@ -19,6 +21,6 @@ private final StatusBarComponent statusBarComponent;
 
     @Override
     public void initialize() {
-
+        statusBarComponent.getStatusLabel().textProperty().bind(ctx.getUiStateModel().statusMessageProperty());
     }
 }
