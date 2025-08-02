@@ -9,8 +9,6 @@ import dev.sch.simpletexteditor.model.EditorModel;
 import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileService;
 import dev.sch.simpletexteditor.ui.view.HomeView;
-import dev.sch.simpletexteditor.util.SettingsStore;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Alert;
@@ -20,7 +18,10 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HomeController implements IController<HomeView> {
     private final AppContext ctx;
@@ -119,7 +120,9 @@ public class HomeController implements IController<HomeView> {
         }else {
             fileChooser.setInitialDirectory(new File(lastDirFallback.toString()));
         }
-            fileChooser.setInitialFileName(editorModel.getCurrentFileName());
+
+        String uniqueFileName = getUniqueFileName(lastDir, editorModel.getCurrentFileName());
+        fileChooser.setInitialFileName(uniqueFileName);
         File file = fileChooser.showSaveDialog(ctx.getEditorTextArea().getScene().getWindow());
         if (file != null){
             Path newFilePath = file.toPath();
@@ -151,4 +154,45 @@ public class HomeController implements IController<HomeView> {
                 new FileChooser.ExtensionFilter("All Files", "*.*")
         );
     }
+
+    private String getUniqueFileName(Path directory, String originalFileName) {
+        if (directory == null || !Files.exists(directory)) {
+            System.out.println("directory == null || !Files.exists(directory)");
+            return originalFileName;
+        }
+
+        Path fullPath = directory.resolve(originalFileName);
+        if (Files.notExists(fullPath)) {
+            System.out.println("Files.notExists(fullPath)");
+            return originalFileName;
+        }
+
+        String nameWithoutExtension = "";
+        String extension = "";
+        int dotIndex = originalFileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            nameWithoutExtension = originalFileName.substring(0, dotIndex);
+            extension = originalFileName.substring(dotIndex);
+        } else {
+            nameWithoutExtension = originalFileName;
+        }
+
+        Pattern pattern = Pattern.compile("(.+)\\s*\\((\\d+)\\)$");
+        Matcher matcher = pattern.matcher(nameWithoutExtension);
+
+        if (matcher.matches()) {
+            nameWithoutExtension = matcher.group(1).trim();
+        }
+
+        int increment = 1;
+        while (true) {
+            String newFileName = String.format("%s (%d)%s", nameWithoutExtension, increment, extension);
+            fullPath = directory.resolve(newFileName);
+            if (Files.notExists(fullPath)) {
+                return newFileName;
+            }
+            increment++;
+        }
+    }
+
 }

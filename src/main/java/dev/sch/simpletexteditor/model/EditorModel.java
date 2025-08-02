@@ -9,7 +9,7 @@ import lombok.Getter;
 import java.nio.file.Path;
 
 public class EditorModel {
-    private final String DEFAULT_NEW_FILE_NAME = "new file";
+    private final String DEFAULT_NEW_FILE_NAME = "new file.txt";
     private final StringProperty currentFileName = new SimpleStringProperty(DEFAULT_NEW_FILE_NAME);
     private final StringProperty editorContent = new SimpleStringProperty("");
     private final BooleanProperty fileModified = new SimpleBooleanProperty(false);
