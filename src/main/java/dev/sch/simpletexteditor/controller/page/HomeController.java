@@ -5,10 +5,11 @@ import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.controller.component.EditorController;
 import dev.sch.simpletexteditor.controller.component.StatusBarController;
 import dev.sch.simpletexteditor.controller.component.ToolbarController;
+import dev.sch.simpletexteditor.model.EditorModel;
+import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileService;
 import dev.sch.simpletexteditor.ui.view.HomeView;
-import dev.sch.simpletexteditor.util.DialogUtil;
-import javafx.animation.PauseTransition;
+import dev.sch.simpletexteditor.util.SettingsStore;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
@@ -17,11 +18,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.util.Duration;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Optional;
 
 public class HomeController implements IController<HomeView> {
     private final AppContext ctx;
@@ -31,17 +30,24 @@ public class HomeController implements IController<HomeView> {
     private final StatusBarController statusBarController;
 
     private Label fileNameLabel;
-    private final EditorFileService fileService;
+    private final EditorFileService editorFileService;
 
     private FileChooser fileChooser;
     private DirectoryChooser directoryChooser;
+
+    private final Path lastDirFallback;
+    private final EditorModel editorModel;
+    private final ObservableSettings observableSettings;
 
     public HomeController(AppContext ctx){
     this.toolbarController = new ToolbarController(ctx);
     this.statusBarController = new StatusBarController(ctx);
     this.editorController = new EditorController(ctx);
     this.ctx = ctx;
-    this.fileService = new EditorFileService(ctx.getEditorModel(), ctx.getUiStateModel());
+    this.editorModel = ctx.getEditorModel();
+    this.editorFileService = ctx.getEditorFileService();
+    this.lastDirFallback = Path.of(System.getProperty("user.home"));
+    this.observableSettings = ctx.getObservableSettings();
 
 //    create nodes
     createNodes();
@@ -54,8 +60,10 @@ public class HomeController implements IController<HomeView> {
             this.statusBarController.getView()
     );
 
-    toolbarController.setOnNewFileRequested(this::handleNewFile);
+        toolbarController.setOnSaveFileRequested(this::handleSaveFile);
     }
+
+
     @Override
     public HomeView getView() {
         return view;
@@ -68,7 +76,7 @@ public class HomeController implements IController<HomeView> {
         statusBarController.initialize();
 
         //    make newfile when app started
-        this.ctx.getEditorModel().newFile();
+        this.editorModel.newFile();
 
         bindNodes();
         setupFileChoosers();
@@ -80,78 +88,55 @@ public class HomeController implements IController<HomeView> {
 
     private void bindNodes(){
         fileNameLabel.textProperty().bind(
-                Bindings.when(ctx.getEditorModel().fileModifiedProperty())
-                        .then(ctx.getEditorModel().getCurrentFileName()+"*")
-                        .otherwise(ctx.getEditorModel().getCurrentFileName())
+                Bindings.when(editorModel.fileModifiedProperty())
+                        .then(editorModel.currentFileNameProperty().concat("*"))
+                        .otherwise(editorModel.currentFileNameProperty())
         );
     }
 
-    private void handleNewFile(){
-        if (ctx.getEditorModel().fileModifiedProperty().get()){
-            DialogUtil.showSaveConfirmationDialog(
-                    ctx.getEditorModel().getCurrentFileName(),
-                    ()->{
-                        System.out.println("on save and continue");
-                        saveCurrentFile();
-                        ctx.getEditorModel().newFile();
-                        PauseTransition delay = new PauseTransition(Duration.seconds(2));
-                        delay.setOnFinished((e)->{
-                            ctx.getUiStateModel().setStatusMessage("Ready");
-                        });
-                        delay.play();
-                    },
-                    ()->{
-                        System.out.println("on discard");
-                        ctx.getEditorModel().newFile();
-                        ctx.getUiStateModel().setStatusMessage("Ready");
-                    }
-            );
-        }
-    }
-
-    public void saveCurrentFile() {
-        Path current = ctx.getEditorModel().getCurrentFilePath();
-        if (current == null
-        || ctx.getEditorModel().getCurrentDirectory() == null) {
-            saveAs();
+    private void handleSaveFile(){
+        Path currentFilePath = editorModel.getCurrentFilePath();
+        if (currentFilePath == null){
+            handleSaveAsFile();
             return;
         }
-        System.out.println("currentFilePath != null");
-        fileService.saveFile(current, ctx.getEditorModel().getEditorContent(),
-                () -> {
-                    System.out.println("success savefile");
+        editorFileService.createSaveFileService(
+                currentFilePath,
+                editorModel.getEditorContent(),
+                ()->{
+                    System.out.println("Succesfully save file to: "+currentFilePath.getParent().toString()+", name:"+editorModel.getCurrentFileName());
                 },
-                err -> Platform.runLater(() -> {
+                (err)->{
                     new Alert(Alert.AlertType.ERROR, "Gagal menyimpan: " + err.getMessage()).showAndWait();
-                })
-        );
+                }
+        ).start();
     }
 
-    public void saveAs() {
-        if (ctx.getEditorModel().getCurrentDirectory() != null){
-            System.out.println("getCurrentDirectory");
-            fileChooser.setInitialDirectory(ctx.getEditorModel().getCurrentDirectory().toFile());
-        }else if (ctx.getEditorModel().getCurrentFilePath() != null){
-            System.out.println("getCurrentFilePath");
-            fileChooser.setInitialDirectory(ctx.getEditorModel().getCurrentFilePath().getParent().toFile());
-            fileChooser.setInitialFileName(ctx.getEditorModel().getCurrentFilePath().getFileName().toString());
+    public void handleSaveAsFile(){
+        Path lastDir = observableSettings.getLastDirectory();
+        if (lastDir != null && lastDir.toFile().exists()){
+            fileChooser.setInitialDirectory(lastDir.toFile());
         }else {
-            fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-            fileChooser.setInitialFileName(ctx.getEditorModel().getCurrentFileName());
+            fileChooser.setInitialDirectory(new File(lastDirFallback.toString()));
         }
-
+            fileChooser.setInitialFileName(editorModel.getCurrentFileName());
         File file = fileChooser.showSaveDialog(ctx.getEditorTextArea().getScene().getWindow());
-
         if (file != null){
-            System.out.println("file != null");
-            fileService.saveFile(
-                    file.toPath(),
-                    ctx.getEditorModel().editorContentProperty().get(),
-                    () -> Platform.runLater(() -> ctx.getEditorModel().setCurrentFilePath(file.toPath())),
-                    (err) -> Platform.runLater(() -> {
+            Path newFilePath = file.toPath();
+            editorFileService.createSaveFileService(
+                    newFilePath,
+                    editorModel.getEditorContent(),
+                    ()->{
+                        System.out.println("Successfully saved file as: " + newFilePath.toString()+", name: "+editorModel.getCurrentFileName());
+                        observableSettings.setLastDirectory(newFilePath.getParent());
+//                        editorModel.set
+                    },
+                    (err)->{
                         new Alert(Alert.AlertType.ERROR, "Gagal Save As: " + err.getMessage()).showAndWait();
-                    })
-            );
+                    }
+            ).start();
+        }else {
+            System.out.println("Cancelling save");
         }
     }
 

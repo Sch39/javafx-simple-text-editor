@@ -4,17 +4,9 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import lombok.Getter;
-import lombok.Setter;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class EditorModel {
     private final String DEFAULT_NEW_FILE_NAME = "new file";
@@ -24,9 +16,6 @@ public class EditorModel {
 
     @Getter
     private Path currentFilePath;
-    @Setter
-    @Getter
-    private Path currentDirectoryPath;
 
     private String initialContent = "";
 
@@ -39,11 +28,9 @@ public class EditorModel {
     public StringProperty currentFileNameProperty() {
         return currentFileName;
     }
-
     public StringProperty editorContentProperty() {
         return editorContent;
     }
-
     public BooleanProperty fileModifiedProperty() {
         return fileModified;
     }
@@ -61,7 +48,6 @@ public class EditorModel {
         }
     }
 
-    //    sync
     public void newFile(){
         setCurrentFilePath(null);
         editorContent.set("");
@@ -69,21 +55,10 @@ public class EditorModel {
         fileModified.set(false);
     }
 
-    public String readFileContent(Path path) throws IOException {
-        String content = Arrays.toString(Files.readAllBytes(path));
-        initialContent = content;
-        return  content;
-    }
-
-    public void writeFileContent(Path path, String content) throws IOException {
-        Files.write(path, content.getBytes());
-        initialContent = content;
-    }
-
-    public ObservableList<File> getFilesInDirectory(Path directory) throws IOException {
-        return Files.list(directory)
-                .filter(Files::isRegularFile)
-                .map(Path::toFile)
-                .collect(Collectors.toCollection(FXCollections::observableArrayList));
+    public void setContentAndMarkAsSaved(String content, Path path) {
+        this.initialContent = content;
+        this.editorContent.set(content);
+        setCurrentFilePath(path);
+        this.fileModified.set(false);
     }
 }
