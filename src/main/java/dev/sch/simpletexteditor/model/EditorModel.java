@@ -21,11 +21,12 @@ public class EditorModel {
     private final StringProperty currentFileName = new SimpleStringProperty(DEFAULT_NEW_FILE_NAME);
     private final StringProperty editorContent = new SimpleStringProperty("");
     private final BooleanProperty fileModified = new SimpleBooleanProperty(false);
+
     @Getter
     private Path currentFilePath;
     @Setter
     @Getter
-    private Path currentDirectory;
+    private Path currentDirectoryPath;
 
     private String initialContent = "";
 
@@ -62,7 +63,6 @@ public class EditorModel {
 
     //    sync
     public void newFile(){
-//        setCurrentDirectory(null);
         setCurrentFilePath(null);
         editorContent.set("");
         initialContent = "";
