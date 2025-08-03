@@ -223,6 +223,13 @@ public class HomeController implements IController<HomeView> {
 
     private void setupShortcuts(){
         view.getScene()
+                        .getAccelerators()
+                                .put(
+                                        new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN),
+                                        this::handleNewFile
+                                );
+
+        view.getScene()
                 .getAccelerators()
                 .put(
                         new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
@@ -263,6 +270,13 @@ public class HomeController implements IController<HomeView> {
                     ctx.getEditorTextArea().redo();
                 }
         );
+
+        view.getScene()
+                .getAccelerators()
+                .put(
+                        new KeyCodeCombination(KeyCode.O, KeyCombination.CONTROL_DOWN),
+                        this::handleOpenFolder // Method reference ke handleOpenFolder
+                );
     }
 
     private void setupFileChoosers() {
