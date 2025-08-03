@@ -3,6 +3,7 @@ package dev.sch.simpletexteditor.controller.page;
 import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.controller.component.EditorController;
+import dev.sch.simpletexteditor.controller.component.SidebarController;
 import dev.sch.simpletexteditor.controller.component.StatusBarController;
 import dev.sch.simpletexteditor.controller.component.ToolbarController;
 import dev.sch.simpletexteditor.model.EditorModel;
@@ -36,6 +37,7 @@ public class HomeController implements IController<HomeView> {
     private final ToolbarController toolbarController;
     private final EditorController editorController;
     private final StatusBarController statusBarController;
+    private final SidebarController sidebarController;
 
     private Label fileNameLabel;
     private final EditorFileService editorFileService;
@@ -51,6 +53,8 @@ public class HomeController implements IController<HomeView> {
     this.toolbarController = new ToolbarController(ctx);
     this.statusBarController = new StatusBarController(ctx);
     this.editorController = new EditorController(ctx);
+    this.sidebarController = new SidebarController(ctx);
+
     this.ctx = ctx;
     this.editorModel = ctx.getEditorModel();
     this.editorFileService = ctx.getEditorFileService();
@@ -65,6 +69,7 @@ public class HomeController implements IController<HomeView> {
     this.view = new HomeView(
             this.toolbarController.getView(),
             this.editorController.getView(),
+            this.sidebarController.getView(),
             this.statusBarController.getView()
     );
 
@@ -87,6 +92,7 @@ public class HomeController implements IController<HomeView> {
     public void initialize() {
         toolbarController.initialize();
         editorController.initialize();
+        sidebarController.initialize();
         statusBarController.initialize();
 
         //    make newfile when app started
