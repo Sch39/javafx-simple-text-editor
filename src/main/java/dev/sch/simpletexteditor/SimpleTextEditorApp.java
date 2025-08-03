@@ -4,6 +4,7 @@ import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.core.Router;
 import dev.sch.simpletexteditor.router.Routes;
 import dev.sch.simpletexteditor.model.EditorModel;
+import dev.sch.simpletexteditor.util.SettingsStore;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -63,7 +64,7 @@ public class SimpleTextEditorApp extends Application {
         Router router = new Router(root, appContext);
 
         Scene scene = new Scene(root, 900, 600);
-        stage.setTitle("Simple Text Editor");
+        stage.setTitle(appContext.getSettingsStore().get(SettingsStore.Keys.APP_NAME, "Simple Text Editor"));
         stage.setScene(scene);
         stage.show();
 
