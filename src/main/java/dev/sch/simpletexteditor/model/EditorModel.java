@@ -37,7 +37,7 @@ public class EditorModel {
 
     public String getCurrentFileName(){return currentFileName.get();}
     public String getEditorContent(){return editorContent.get();}
-    public boolean getFileModified(){return fileModified.get();}
+    public boolean isFileModified(){return fileModified.get();}
 
     public void setCurrentFilePath(Path currentFilePath) {
         this.currentFilePath = currentFilePath;

@@ -14,6 +14,9 @@ import javafx.geometry.Orientation;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
@@ -62,6 +65,10 @@ public class HomeController implements IController<HomeView> {
     );
 
         toolbarController.setOnSaveFileRequested(this::handleSaveFile);
+        toolbarController.setOnSaveAsFileRequested(this::handleSaveAsFile);
+
+        //        when view added to scene
+        viewAddedToSceneProperty();
     }
 
 
@@ -81,6 +88,16 @@ public class HomeController implements IController<HomeView> {
 
         bindNodes();
         setupFileChoosers();
+    }
+
+    private void viewAddedToSceneProperty(){
+        view.sceneProperty()
+                .addListener((obs, oldScene, newScene)->{
+                    if (newScene != null){
+                        System.out.println("viewAddedToSceneProperty");
+                        setupShortcuts();
+                    }
+                });
     }
 
     private void createNodes(){
@@ -141,6 +158,50 @@ public class HomeController implements IController<HomeView> {
         }else {
             System.out.println("Cancelling save");
         }
+    }
+
+    private void setupShortcuts(){
+        view.getScene()
+                .getAccelerators()
+                .put(
+                        new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
+                        ()->{
+                            if (!editorModel.isFileModified()){
+                                return;
+                            }
+                            handleSaveFile();
+                        }
+                );
+
+        view.getScene()
+                .getAccelerators()
+                .put(
+                        new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
+                        ()->{
+                            if (!editorModel.isFileModified()){
+                                return;
+                            }
+                            handleSaveAsFile();
+                        }
+                );
+
+        view.getScene()
+                .getAccelerators()
+                .put(
+                new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN),
+                () -> {
+                    ctx.getEditorTextArea().undo();
+                }
+        );
+
+        view.getScene()
+                .getAccelerators()
+                .put(
+                new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN),
+                () -> {
+                    ctx.getEditorTextArea().redo();
+                }
+        );
     }
 
     private void setupFileChoosers() {
