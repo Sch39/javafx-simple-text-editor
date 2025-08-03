@@ -1,3 +1,21 @@
 .tree-cell:filled:selected {
     -fx-background-color: #4c4f69;
 }
+
+.tree-cell > .tree-disclosure-node > .arrow {
+    -fx-background-color: transparent;
+    -fx-shape: null;
+    -fx-padding: 0;
+}
+
+.tree-cell > .tree-disclosure-node:hover > .arrow {
+    -fx-background-color: transparent;
+}
+
+.sidebar-component .tree-view:focused {
+    -fx-faint-focus-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-background-color: -fx-text-box-border, -fx-control-inner-background;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 0;
+}
