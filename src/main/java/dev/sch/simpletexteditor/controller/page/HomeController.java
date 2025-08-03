@@ -9,6 +9,7 @@ import dev.sch.simpletexteditor.model.EditorModel;
 import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileService;
 import dev.sch.simpletexteditor.ui.view.HomeView;
+import dev.sch.simpletexteditor.util.DialogUtil;
 import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
@@ -25,6 +26,7 @@ import javafx.util.Duration;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,6 +68,7 @@ public class HomeController implements IController<HomeView> {
             this.statusBarController.getView()
     );
 
+        toolbarController.setOnNewFileRequested(this::handleNewFile);
         toolbarController.setOnSaveFileRequested(this::handleSaveFile);
         toolbarController.setOnSaveAsFileRequested(this::handleSaveAsFile);
         toolbarController.setOnOpenFolderRequested(this::handleOpenFolder);
@@ -115,10 +118,35 @@ public class HomeController implements IController<HomeView> {
         );
     }
 
+    private void handleNewFile(){
+        if (!editorModel.isFileModified()){
+            editorModel.newFile();
+            return;
+        }
+
+        DialogUtil.showSaveConfirmationDialog(
+                editorModel.getCurrentFileName(),
+                () -> {
+                    handleSaveFile(() -> {
+                        editorModel.newFile();
+                        System.out.println("File saved, opening new file.");
+                    });
+                },
+                () -> {
+                    editorModel.newFile();
+                    System.out.println("Changes discarded, opening new file.");
+                }
+        );
+    }
+
     private void handleSaveFile(){
+        handleSaveFile(null);
+    }
+
+    private void handleSaveFile(Runnable onSuccessCallback){
         Path currentFilePath = editorModel.getCurrentFilePath();
         if (currentFilePath == null){
-            handleSaveAsFile();
+            handleSaveAsFile(onSuccessCallback);
             return;
         }
         editorFileService.createSaveFileService(
@@ -127,6 +155,10 @@ public class HomeController implements IController<HomeView> {
                 ()->{
                     System.out.println("Succesfully save file to: "+currentFilePath.getParent().toString()+", name:"+editorModel.getCurrentFileName());
                     resetStatusAfterDelay("Ready", 1);
+
+                    if (onSuccessCallback != null){
+                        onSuccessCallback.run();
+                    }
                 },
                 (err)->{
                     new Alert(Alert.AlertType.ERROR, "Gagal menyimpan: " + err.getMessage()).showAndWait();
@@ -136,7 +168,11 @@ public class HomeController implements IController<HomeView> {
         ).start();
     }
 
-    public void handleSaveAsFile(){
+    private void handleSaveAsFile(){
+        handleSaveAsFile(null);
+    }
+
+    private void handleSaveAsFile(Runnable onSuccessCallback){
         Path lastDir = observableSettings.getLastDirectory();
         if (lastDir != null && lastDir.toFile().exists()){
             fileChooser.setInitialDirectory(lastDir.toFile());
@@ -156,6 +192,9 @@ public class HomeController implements IController<HomeView> {
                         System.out.println("Successfully saved file as: " + newFilePath.toString()+", name: "+editorModel.getCurrentFileName());
                         observableSettings.setLastDirectory(newFilePath.getParent());
                         resetStatusAfterDelay("Ready", 1);
+                        if (onSuccessCallback != null){
+                            onSuccessCallback.run();
+                        }
                     },
                     (err)->{
                         new Alert(Alert.AlertType.ERROR, "Gagal Save As: " + err.getMessage()).showAndWait();
