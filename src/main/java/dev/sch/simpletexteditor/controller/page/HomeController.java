@@ -9,6 +9,7 @@ import dev.sch.simpletexteditor.model.EditorModel;
 import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileService;
 import dev.sch.simpletexteditor.ui.view.HomeView;
+import javafx.animation.PauseTransition;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Alert;
@@ -19,6 +20,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -123,9 +125,12 @@ public class HomeController implements IController<HomeView> {
                 editorModel.getEditorContent(),
                 ()->{
                     System.out.println("Succesfully save file to: "+currentFilePath.getParent().toString()+", name:"+editorModel.getCurrentFileName());
+                    resetStatusAfterDelay("Ready", 1);
                 },
                 (err)->{
                     new Alert(Alert.AlertType.ERROR, "Gagal menyimpan: " + err.getMessage()).showAndWait();
+                    resetStatusAfterDelay("Ready", 1);
+
                 }
         ).start();
     }
@@ -149,10 +154,12 @@ public class HomeController implements IController<HomeView> {
                     ()->{
                         System.out.println("Successfully saved file as: " + newFilePath.toString()+", name: "+editorModel.getCurrentFileName());
                         observableSettings.setLastDirectory(newFilePath.getParent());
-//                        editorModel.set
+                        resetStatusAfterDelay("Ready", 1);
                     },
                     (err)->{
                         new Alert(Alert.AlertType.ERROR, "Gagal Save As: " + err.getMessage()).showAndWait();
+                        resetStatusAfterDelay("Ready", 1);
+
                     }
             ).start();
         }else {
@@ -254,6 +261,13 @@ public class HomeController implements IController<HomeView> {
             }
             increment++;
         }
+    }
+
+    private void resetStatusAfterDelay(String status, int seconds){
+        PauseTransition pause= new PauseTransition(Duration.seconds(seconds));
+
+        pause.setOnFinished(e->ctx.getUiStateModel().setStatusMessage(status));
+        pause.play();
     }
 
 }
