@@ -70,7 +70,7 @@ public class SidebarController implements IController<SidebarComponent> {
             item.expandedProperty()
                     .addListener((obs, oldVal, newVal)->{
                         if (newVal
-                                && item.getChildren().getFirst() instanceof TreeItem<File>
+                                && item.getChildren().getFirst() != null
                                 && item.getChildren().getFirst().getValue() == null){
                             item.getChildren().removeFirst();
                             try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)){
