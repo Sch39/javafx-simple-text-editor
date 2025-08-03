@@ -3,6 +3,7 @@ package dev.sch.simpletexteditor.controller.component;
 import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.model.ObservableSettings;
+import dev.sch.simpletexteditor.service.EditorFileWatcherService;
 import dev.sch.simpletexteditor.ui.components.SidebarComponent;
 import javafx.scene.control.TreeItem;
 
@@ -10,18 +11,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
 
 public class SidebarController implements IController<SidebarComponent> {
     private final AppContext ctx;
     private final SidebarComponent sidebarComponent;
     private final ObservableSettings observableSettings;
+    private final EditorFileWatcherService fileWatcherService;
 
     public SidebarController(AppContext ctx){
         this.ctx = ctx;
         this.sidebarComponent = new SidebarComponent();
         this.observableSettings = ctx.getObservableSettings();
+        this.fileWatcherService = ctx.getFileWatcherService();
     }
 
     @Override
@@ -51,18 +52,14 @@ public class SidebarController implements IController<SidebarComponent> {
         sidebarComponent.getFileTreeView().setShowRoot(true);
         rootItem.setExpanded(true);
 
-        try{
-            List<Path> sortedEntries = Files.list(dirPath)
-                    .sorted(new FileComparator())
-                    .toList();
-            for (Path entry:sortedEntries){
-                TreeItem<File> item = createTreeItem(entry);
-                rootItem.getChildren().add(item);
-            }
-        }catch (IOException e){
-            e.printStackTrace();
-            ctx.getUiStateModel().setStatusMessage("Failed load folder: "+e.getMessage());
-        }
+        populateTreeItem(rootItem, dirPath);
+        fileWatcherService.setupDirectoryWatcher(
+                dirPath,
+                ()->{
+                    loadDirectory(dirPath);
+                    System.out.println("Directory reloaded due to change.");
+                }
+        );
     }
 
     private TreeItem<File> createTreeItem(Path path){
@@ -73,42 +70,39 @@ public class SidebarController implements IController<SidebarComponent> {
             item.getChildren().add(new TreeItem<>());
             item.expandedProperty()
                     .addListener((obs, oldVal, newVal)->{
-                        if (newVal
-                                && item.getChildren().getFirst() != null
-                                && item.getChildren().getFirst().getValue() == null){
-                            item.getChildren().removeFirst();
-                            try{
-                                List<Path> sortedSubEntries = Files.list(path)
-                                        .sorted(new FileComparator())
-                                        .toList();
-                                for (Path subEntry : sortedSubEntries){
-                                    item.getChildren()
-                                            .add(createTreeItem(subEntry));
-                                }
-                            }catch (IOException e){
-                                e.printStackTrace();
-                                ctx.getUiStateModel().setStatusMessage("Failed load sub-folder: "+e.getMessage());
-                            }
+                        if (newVal && item.getChildren().size() == 1 && item.getChildren().getFirst().getValue() == null){
+                           populateTreeItem(item, path);
                         }
                     });
         }
         return item;
     }
 
-    private static class FileComparator implements Comparator<Path>{
+    private void populateTreeItem(TreeItem<File> parentItem, Path dirPath) {
+        TreeItem<File> loadingItem = new TreeItem<>(new File("Loading..."));
+        parentItem.getChildren().setAll(loadingItem);
 
-        @Override
-        public int compare(Path path1, Path path2) {
-            boolean isDir1 = Files.isDirectory(path1);
-            boolean isDir2 = Files.isDirectory(path2);
+        fileWatcherService.loadDirectoryAsync(
+                dirPath,
+                (sortedPaths) -> {
+                    parentItem.getChildren().clear();
+                    for (Path entry : sortedPaths) {
+                        parentItem.getChildren().add(createTreeItem(entry));
 
-            if (isDir1==isDir2){
-                return path1.getFileName().toString().compareToIgnoreCase(path2.getFileName().toString());
-            }
-            if (isDir1){
-                return -1;
-            }
-            return 1;
-        }
+                        if (Files.isDirectory(entry)){
+                            try {
+                                fileWatcherService.registerDirectory(entry);
+                            }catch (IOException e){
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    return null;
+                },
+                (e) -> {
+                    ctx.getUiStateModel().setStatusMessage("Failed load folder: " + e.getMessage());
+                    return null;
+                }
+        );
     }
 }
