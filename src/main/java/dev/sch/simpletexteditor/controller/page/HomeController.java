@@ -100,8 +100,9 @@ public class HomeController implements IController<HomeView> {
         view.sceneProperty()
                 .addListener((obs, oldScene, newScene)->{
                     if (newScene != null){
-                        System.out.println("viewAddedToSceneProperty");
+//                        System.out.println("viewAddedToSceneProperty");
                         setupShortcuts();
+                        ctx.getEditorTextArea().requestFocus();
                     }
                 });
     }
@@ -121,6 +122,7 @@ public class HomeController implements IController<HomeView> {
     private void handleNewFile(){
         if (!editorModel.isFileModified()){
             editorModel.newFile();
+            ctx.getEditorTextArea().requestFocus();
             return;
         }
 
@@ -129,6 +131,7 @@ public class HomeController implements IController<HomeView> {
                 () -> {
                     handleSaveFile(() -> {
                         editorModel.newFile();
+                        ctx.getEditorTextArea().requestFocus();
                         System.out.println("File saved, opening new file.");
                     });
                 },
