@@ -21,6 +21,9 @@ public class ToolbarController implements IController<ToolbarComponent> {
     @Setter
     private Runnable onSaveAsFileRequested;
 
+    @Setter
+    private Runnable onOpenFolderRequested;
+
     public ToolbarController(AppContext ctx){
         this.ctx = ctx;
         toolbar = new ToolbarComponent();
@@ -67,6 +70,12 @@ public class ToolbarController implements IController<ToolbarComponent> {
         toolbar.getSaveAsButton().setOnAction(e->{
             if (onSaveAsFileRequested != null){
                 onSaveAsFileRequested.run();
+            }
+        });
+
+        toolbar.getOpenFolderButton().setOnAction(e->{
+            if (onOpenFolderRequested != null){
+                onOpenFolderRequested.run();
             }
         });
     }

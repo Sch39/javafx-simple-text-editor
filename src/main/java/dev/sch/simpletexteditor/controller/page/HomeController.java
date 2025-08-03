@@ -68,6 +68,7 @@ public class HomeController implements IController<HomeView> {
 
         toolbarController.setOnSaveFileRequested(this::handleSaveFile);
         toolbarController.setOnSaveAsFileRequested(this::handleSaveAsFile);
+        toolbarController.setOnOpenFolderRequested(this::handleOpenFolder);
 
         //        when view added to scene
         viewAddedToSceneProperty();
@@ -164,6 +165,20 @@ public class HomeController implements IController<HomeView> {
             ).start();
         }else {
             System.out.println("Cancelling save");
+        }
+    }
+
+    private void handleOpenFolder(){
+        Path lastDir = observableSettings.getLastDirectory();
+        if (lastDir != null && lastDir.toFile().exists()){
+            directoryChooser.setInitialDirectory(lastDir.toFile());
+        }else {
+            directoryChooser.setInitialDirectory(new File(lastDirFallback.toString()));
+        }
+        File selectedDir = directoryChooser.showDialog(ctx.getEditorTextArea().getScene().getWindow());
+        if (selectedDir != null){
+            observableSettings.setLastDirectory(selectedDir.toPath());
+            System.out.println("Success set folder");
         }
     }
 
