@@ -37,7 +37,7 @@ public class EditorFileService {
         service.setOnSucceeded(e->Platform.runLater(()->{
             progressModel.progressProperty().unbind();
             progressModel.messageProperty().unbind();
-            progressModel.visibleProperty().set(true);
+            progressModel.visibleProperty().set(false);
 
             editorModel.setContentAndMarkAsSaved(content, targetPath);
             uiStateModel.setStatusMessage("Successfully save file '"+targetPath.getFileName()+"'");
@@ -49,7 +49,7 @@ public class EditorFileService {
         service.setOnFailed(e->Platform.runLater(()->{
             progressModel.progressProperty().unbind();
             progressModel.messageProperty().unbind();
-            progressModel.visibleProperty().set(true);
+            progressModel.visibleProperty().set(false);
 
             Throwable ex = service.getException();
             uiStateModel.setStatusMessage("Failed save: "+(ex != null ? ex.getMessage() : "Unknown error"));

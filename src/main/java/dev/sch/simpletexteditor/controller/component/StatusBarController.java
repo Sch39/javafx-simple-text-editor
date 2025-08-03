@@ -22,5 +22,7 @@ private final StatusBarComponent statusBarComponent;
     @Override
     public void initialize() {
         statusBarComponent.getStatusLabel().textProperty().bind(ctx.getUiStateModel().statusMessageProperty());
+        statusBarComponent.getProgressBar().progressProperty().bind(ctx.getProgressModel().progressProperty());
+        statusBarComponent.getProgressBar().visibleProperty().bind(ctx.getProgressModel().visibleProperty());
     }
 }
