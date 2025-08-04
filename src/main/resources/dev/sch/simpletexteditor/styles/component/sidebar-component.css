@@ -1,5 +1,6 @@
 .tree-cell:filled:selected {
-    -fx-background-color: #4c4f69;
+    -fx-background-color: #D3D3D3;
+    -fx-text-fill: black;
 }
 
 .tree-cell > .tree-disclosure-node > .arrow {
