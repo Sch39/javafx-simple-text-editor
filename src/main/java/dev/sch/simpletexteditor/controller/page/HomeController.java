@@ -201,7 +201,6 @@ public class HomeController implements IController<HomeView> {
                     editorModel.getEditorContent(),
                     ()->{
                         System.out.println("Successfully saved file as: " + newFilePath.toString()+", name: "+editorModel.getCurrentFileName());
-                        observableSettings.setLastDirectory(newFilePath.getParent());
                         resetStatusAfterDelay("Ready", 1);
                         if (onSuccessCallback != null){
                             onSuccessCallback.run();
