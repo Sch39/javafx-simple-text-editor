@@ -1,5 +1,6 @@
 package dev.sch.simpletexteditor.controller.page;
 
+import dev.sch.simpletexteditor.config.DefaultConfig;
 import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.controller.component.EditorController;
@@ -58,7 +59,7 @@ public class HomeController implements IController<HomeView> {
     this.ctx = ctx;
     this.editorModel = ctx.getEditorModel();
     this.editorFileService = ctx.getEditorFileService();
-    this.lastDirFallback = Path.of(System.getProperty("user.home"));
+    this.lastDirFallback = Path.of(DefaultConfig.DEFAULT_WORKSPACE_DIRECTORY);
     this.observableSettings = ctx.getObservableSettings();
 
 //    create nodes

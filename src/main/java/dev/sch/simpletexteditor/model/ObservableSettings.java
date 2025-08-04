@@ -1,5 +1,6 @@
 package dev.sch.simpletexteditor.model;
 
+import dev.sch.simpletexteditor.config.DefaultConfig;
 import dev.sch.simpletexteditor.util.SettingsStore;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -15,7 +16,7 @@ public class ObservableSettings {
     public ObservableSettings(SettingsStore settingsStore){
         this.settingsStore = settingsStore;
 
-        Path initial = settingsStore.getPath(SettingsStore.Keys.SETTING_LAST_DIR, Paths.get(System.getProperty("user.home")));
+        Path initial = settingsStore.getPath(SettingsStore.Keys.SETTING_LAST_DIR, Paths.get(DefaultConfig.DEFAULT_WORKSPACE_DIRECTORY));
         lastDirectory.set(initial.toAbsolutePath());
 
         this.bind();
