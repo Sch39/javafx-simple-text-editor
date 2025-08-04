@@ -1,5 +1,5 @@
 # Simple Text Editor
-Sebuah editor teks sederhana yang dibangun menggunakan JavaFX, dirancang untuk belajar implementasi konkurensi (concurrency) dan arsitektur kode yang bersih. Aplikasi ini memungkinkan pengguna untuk membuat, mengedit, menyimpan file teks tanpa mengunci (freezing) antarmuka pengguna.
+Sebuah editor teks sederhana yang dibangun menggunakan JavaFX, dirancang untuk belajar implementasi konkurensi (concurrency) dan arsitektur kode yang bersih. Aplikasi ini memungkinkan pengguna untuk membuat, mengedit, membuka file, menyimpan file teks tanpa mengunci (freezing) antarmuka pengguna dan lainnya.
 
 ## Fitur Utama
 
@@ -9,7 +9,8 @@ Sebuah editor teks sederhana yang dibangun menggunakan JavaFX, dirancang untuk b
   - Buat file baru.
   - Simpan file yang sedang diedit.
   - Simpan file dengan nama baru (Save As).
-  - Buka folder dan tampilkan daftar file di dalamnya (ongoing).
+  - Buka folder dan tampilkan daftar file di dalamnya (v).
+  - rename file name with 1 click mouse (ongoing).
   
 - Antarmuka Pengguna Intuitif:
     - Tanda * pada nama file menunjukkan adanya perubahan yang belum disimpan.
