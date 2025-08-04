@@ -16,11 +16,13 @@ import javafx.scene.layout.VBox;
 import lombok.Getter;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
 
 @Getter
 public class SidebarComponent extends VBox {
-    private final TreeView<File> fileTreeView;
+    private final TreeView<Path> fileTreeView;
 
     public SidebarComponent(){
         this.fileTreeView = new TreeView<>();
@@ -29,14 +31,13 @@ public class SidebarComponent extends VBox {
 
         this.fileTreeView.setCellFactory(tc -> new TreeCell<>() {
             private final StackPane arrowClickArea = new StackPane();
-            private final HBox cellLayout = new HBox(2);
+            private final HBox cellLayout = new HBox(4);
             private final ImageView arrowIcon = new ImageView();
             private final ImageView fileIcon = new ImageView();
             private final ImageView folderIcon = new ImageView();
             private final int arrowIconSize = 10;
             private final int folderIconSize = 16;
             private final int fileIconSize = 16;
-
 
             {
                 arrowIcon.setFitWidth(arrowIconSize);
@@ -50,50 +51,59 @@ public class SidebarComponent extends VBox {
                 arrowClickArea.setAlignment(Pos.CENTER);
 
                 arrowClickArea.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                    System.out.println("clicked: "+getItem().getName());
                     if (getTreeItem() != null && !getTreeItem().isLeaf()) {
                         getTreeItem().setExpanded(!getTreeItem().isExpanded());
                         event.consume();
                     }
                 });
 
-                cellLayout.getChildren().addAll(arrowClickArea, fileIcon, folderIcon);
+                cellLayout.getChildren().addAll(arrowClickArea, folderIcon, fileIcon);
                 cellLayout.setPadding(new Insets(2, 0, 2, 0));
                 HBox.setHgrow(cellLayout, Priority.ALWAYS);
             }
 
             @Override
-            protected void updateItem(File item, boolean empty) {
+            protected void updateItem(Path item, boolean empty) {
                 super.updateItem(item, empty);
 
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
-                } else {
-                    setText(item.getName());
+                    return;
+                }
 
-                    TreeItem<File> treeItem = getTreeItem();
+                setText(item.getFileName() != null ? item.getFileName().toString() : item.toString());
 
-                    if (treeItem != null && !treeItem.isLeaf()) {
+                TreeItem<Path> treeItem = getTreeItem();
+                boolean isDirectory = Files.isDirectory(item);
+
+                // reset visibility first
+                arrowClickArea.setVisible(false);
+                folderIcon.setVisible(false);
+                fileIcon.setVisible(false);
+                arrowIcon.setImage(null);
+
+                if (isDirectory) {
+                    // always show folder icon for directories
+                    folderIcon.setVisible(true);
+                    folderIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("folder.png", folderIconSize)).getImage());
+
+                    // show arrow only if expandable (i.e., has children placeholder or real)
+                    if (treeItem != null && !treeItem.getChildren().isEmpty()) {
                         arrowClickArea.setVisible(true);
-                        folderIcon.setVisible(true);
-                        fileIcon.setVisible(false);
-
                         if (treeItem.isExpanded()) {
                             arrowIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("bottom-arrow.png", arrowIconSize)).getImage());
                         } else {
                             arrowIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("right-arrow.png", arrowIconSize)).getImage());
                         }
-                        folderIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("folder.png", folderIconSize)).getImage());
-                    } else {
-                        arrowClickArea.setVisible(false);
-                        folderIcon.setVisible(false);
-                        fileIcon.setVisible(true);
-                        fileIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("file.png", fileIconSize)).getImage());
                     }
-
-                    setGraphic(cellLayout);
+                } else {
+                    // regular file
+                    fileIcon.setVisible(true);
+                    fileIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("file.png", fileIconSize)).getImage());
                 }
+
+                setGraphic(cellLayout);
             }
         });
 

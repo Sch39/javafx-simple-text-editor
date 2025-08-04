@@ -5,12 +5,14 @@ import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileWatcherService;
 import dev.sch.simpletexteditor.ui.components.SidebarComponent;
+import javafx.application.Platform;
 import javafx.scene.control.TreeItem;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 
 public class SidebarController implements IController<SidebarComponent> {
     private final AppContext ctx;
@@ -47,39 +49,47 @@ public class SidebarController implements IController<SidebarComponent> {
     }
 
     private void loadDirectory(Path dirPath){
-        TreeItem<File> rootItem = new TreeItem<>(dirPath.getFileName().toFile());
+        TreeItem<Path> rootItem = new TreeItem<>(dirPath);
         sidebarComponent.getFileTreeView().setRoot(rootItem);
         sidebarComponent.getFileTreeView().setShowRoot(true);
         rootItem.setExpanded(true);
 
-        populateTreeItem(rootItem, dirPath);
+        if (Files.isDirectory(dirPath)) {
+            populateTreeItem(rootItem, dirPath);
+        }
+
         fileWatcherService.setupDirectoryWatcher(
                 dirPath,
                 ()->{
-                    loadDirectory(dirPath);
-                    System.out.println("Directory reloaded due to change.");
+                    Platform.runLater(()->{
+                        loadDirectory(dirPath);
+                        System.out.println("Directory reloaded due to change.");
+                    });
                 }
         );
     }
 
-    private TreeItem<File> createTreeItem(Path path){
-        TreeItem<File> item = new TreeItem<>(path.getFileName().toFile());
+    private TreeItem<Path> createTreeItem(Path path){
+        TreeItem<Path> item = new TreeItem<>(path);
 
         if (Files.isDirectory(path)){
             item.setExpanded(false);
-            item.getChildren().add(new TreeItem<>());
-            item.expandedProperty()
-                    .addListener((obs, oldVal, newVal)->{
-                        if (newVal && item.getChildren().size() == 1 && item.getChildren().getFirst().getValue() == null){
-                           populateTreeItem(item, path);
-                        }
-                    });
+
+            if (hasChildren(path)){
+                item.getChildren().add(new TreeItem<>());
+                item.expandedProperty()
+                        .addListener((obs, oldVal, newVal)->{
+                            if (newVal && item.getChildren().size() == 1 && item.getChildren().getFirst().getValue() == null){
+                                populateTreeItem(item, path);
+                            }
+                        });
+            }
         }
         return item;
     }
 
-    private void populateTreeItem(TreeItem<File> parentItem, Path dirPath) {
-        TreeItem<File> loadingItem = new TreeItem<>(new File("Loading..."));
+    private void populateTreeItem(TreeItem<Path> parentItem, Path dirPath) {
+        TreeItem<Path> loadingItem = new TreeItem<>(Path.of("Loading..."));
         parentItem.getChildren().setAll(loadingItem);
 
         fileWatcherService.loadDirectoryAsync(
@@ -104,5 +114,15 @@ public class SidebarController implements IController<SidebarComponent> {
                     return null;
                 }
         );
+    }
+
+    private boolean hasChildren(Path path) {
+        if (!Files.isDirectory(path)) return false;
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
+            Iterator<Path> it = ds.iterator();
+            return it.hasNext();
+        } catch (IOException e) {
+            return false;
+        }
     }
 }
