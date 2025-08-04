@@ -4,18 +4,15 @@ import dev.sch.simpletexteditor.SimpleTextEditorApp;
 import dev.sch.simpletexteditor.util.IconLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import lombok.Getter;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -31,7 +28,8 @@ public class SidebarComponent extends VBox {
 
         this.fileTreeView.setCellFactory(tc -> new TreeCell<>() {
             private final StackPane arrowClickArea = new StackPane();
-            private final HBox cellLayout = new HBox(4);
+            private final StackPane iconWrapper = new StackPane();
+            private final HBox cellLayout = new HBox(2);
             private final ImageView arrowIcon = new ImageView();
             private final ImageView fileIcon = new ImageView();
             private final ImageView folderIcon = new ImageView();
@@ -47,6 +45,7 @@ public class SidebarComponent extends VBox {
                 folderIcon.setFitWidth(folderIconSize);
                 folderIcon.setFitHeight(folderIconSize);
 
+                arrowClickArea.setPrefSize(arrowIconSize + 4, arrowIconSize + 4);
                 arrowClickArea.getChildren().add(arrowIcon);
                 arrowClickArea.setAlignment(Pos.CENTER);
 
@@ -57,9 +56,16 @@ public class SidebarComponent extends VBox {
                     }
                 });
 
-                cellLayout.getChildren().addAll(arrowClickArea, folderIcon, fileIcon);
-                cellLayout.setPadding(new Insets(2, 0, 2, 0));
-                HBox.setHgrow(cellLayout, Priority.ALWAYS);
+                iconWrapper.getChildren().addAll(folderIcon, fileIcon);
+                iconWrapper.setAlignment(Pos.CENTER_LEFT);
+                iconWrapper.setMinWidth(Math.max(folderIconSize, fileIconSize));
+                iconWrapper.setPrefWidth(Math.max(folderIconSize, fileIconSize));
+
+                cellLayout.getChildren().addAll(arrowClickArea, iconWrapper);
+                cellLayout.setAlignment(Pos.CENTER_LEFT);
+                cellLayout.setPadding(new Insets(1, 2, 1, 0));
+
+                setContentDisplay(ContentDisplay.LEFT);
             }
 
             @Override
@@ -77,20 +83,17 @@ public class SidebarComponent extends VBox {
                 TreeItem<Path> treeItem = getTreeItem();
                 boolean isDirectory = Files.isDirectory(item);
 
-                // reset visibility first
-                arrowClickArea.setVisible(false);
+                arrowIcon.setVisible(false);
                 folderIcon.setVisible(false);
                 fileIcon.setVisible(false);
                 arrowIcon.setImage(null);
 
                 if (isDirectory) {
-                    // always show folder icon for directories
                     folderIcon.setVisible(true);
                     folderIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("folder.png", folderIconSize)).getImage());
 
-                    // show arrow only if expandable (i.e., has children placeholder or real)
                     if (treeItem != null && !treeItem.getChildren().isEmpty()) {
-                        arrowClickArea.setVisible(true);
+                        arrowIcon.setVisible(true);
                         if (treeItem.isExpanded()) {
                             arrowIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("bottom-arrow.png", arrowIconSize)).getImage());
                         } else {
@@ -98,7 +101,6 @@ public class SidebarComponent extends VBox {
                         }
                     }
                 } else {
-                    // regular file
                     fileIcon.setVisible(true);
                     fileIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("file.png", fileIconSize)).getImage());
                 }
@@ -113,7 +115,5 @@ public class SidebarComponent extends VBox {
 
         this.getStylesheets()
                 .add(Objects.requireNonNull(SimpleTextEditorApp.class.getResource("styles/component/sidebar-component.css")).toExternalForm());
-
-
     }
 }
