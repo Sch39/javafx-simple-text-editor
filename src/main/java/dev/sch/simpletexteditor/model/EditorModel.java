@@ -47,6 +47,13 @@ public class EditorModel {
             currentFileName.set(DEFAULT_NEW_FILE_NAME);
         }
     }
+    public void setEditorContent(String content){
+        editorContent.set(content);
+    }
+
+    public void setFileModified(boolean fileModified){
+        this.fileModified.set(fileModified);
+    }
 
     public void newFile(){
         setCurrentFilePath(null);

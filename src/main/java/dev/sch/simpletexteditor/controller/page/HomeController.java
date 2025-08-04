@@ -78,6 +78,7 @@ public class HomeController implements IController<HomeView> {
         toolbarController.setOnSaveFileRequested(this::handleSaveFile);
         toolbarController.setOnSaveAsFileRequested(this::handleSaveAsFile);
         toolbarController.setOnOpenFolderRequested(this::handleOpenFolder);
+        this.sidebarController.setOnFileDoubleClick(this::handleOpenFile);
 
         //        when view added to scene
         viewAddedToSceneProperty();
@@ -228,6 +229,25 @@ public class HomeController implements IController<HomeView> {
         if (selectedDir != null){
             observableSettings.setLastDirectory(selectedDir.toPath());
             System.out.println("Success set folder");
+        }
+    }
+
+    private void handleOpenFile(Path fileToOpen){
+        if (editorModel.getCurrentFilePath() != null && editorModel.getCurrentFilePath().equals(fileToOpen)){
+            return;
+        }
+        if (Files.exists(fileToOpen)){
+            editorFileService.createOpenFileService(fileToOpen,
+                    ()->{
+            editorModel.setCurrentFilePath(fileToOpen);
+                    },
+                    (e)->{
+                        new Alert(Alert.AlertType.ERROR, "Failed open file: " + e.getMessage()).showAndWait();
+                    }).start();
+            resetStatusAfterDelay("Ready", 1);
+        System.out.println("opened file: "+fileToOpen.getFileName().toString());
+        }else {
+            new Alert(Alert.AlertType.ERROR, "File not found: " + fileToOpen.toString()).showAndWait();
         }
     }
 

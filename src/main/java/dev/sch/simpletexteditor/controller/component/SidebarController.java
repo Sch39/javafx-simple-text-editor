@@ -7,18 +7,23 @@ import dev.sch.simpletexteditor.service.EditorFileWatcherService;
 import dev.sch.simpletexteditor.ui.components.SidebarComponent;
 import javafx.application.Platform;
 import javafx.scene.control.TreeItem;
+import lombok.Setter;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 public class SidebarController implements IController<SidebarComponent> {
     private final AppContext ctx;
     private final SidebarComponent sidebarComponent;
     private final ObservableSettings observableSettings;
     private final EditorFileWatcherService fileWatcherService;
+    @Setter
+    private Consumer<Path> onFileDoubleClick;
+
 
     public SidebarController(AppContext ctx){
         this.ctx = ctx;
@@ -46,6 +51,21 @@ public class SidebarController implements IController<SidebarComponent> {
         if (observableSettings.getLastDirectory() != null){
             loadDirectory(observableSettings.getLastDirectory());
         }
+
+        sidebarComponent.getFileTreeView()
+                .setOnMouseClicked(e->{
+                    if (e.getClickCount() == 2){
+                        TreeItem<Path> selectedItem = sidebarComponent.getFileTreeView().getSelectionModel().getSelectedItem();
+
+                        if (selectedItem != null && Files.isRegularFile(selectedItem.getValue())) {
+                            Path fileToOpen = selectedItem.getValue();
+
+                            if (onFileDoubleClick != null) {
+                                onFileDoubleClick.accept(fileToOpen);
+                            }
+                        }
+                    }
+                });
     }
 
     private void loadDirectory(Path dirPath){
