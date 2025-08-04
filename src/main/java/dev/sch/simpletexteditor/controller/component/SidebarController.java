@@ -95,7 +95,8 @@ public class SidebarController implements IController<SidebarComponent> {
         if (Files.isDirectory(path)){
             item.setExpanded(false);
 
-            if (hasChildren(path)){
+            fileWatcherService.hasChildrenAsync(path, hasChildren->{
+            if (hasChildren){
                 item.getChildren().add(new TreeItem<>());
                 item.expandedProperty()
                         .addListener((obs, oldVal, newVal)->{
@@ -104,6 +105,7 @@ public class SidebarController implements IController<SidebarComponent> {
                             }
                         });
             }
+            });
         }
         return item;
     }
@@ -134,15 +136,5 @@ public class SidebarController implements IController<SidebarComponent> {
                     return null;
                 }
         );
-    }
-
-    private boolean hasChildren(Path path) {
-        if (!Files.isDirectory(path)) return false;
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
-            Iterator<Path> it = ds.iterator();
-            return it.hasNext();
-        } catch (IOException e) {
-            return false;
-        }
     }
 }
