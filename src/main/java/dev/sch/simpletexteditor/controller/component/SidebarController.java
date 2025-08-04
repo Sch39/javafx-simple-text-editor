@@ -78,7 +78,7 @@ public class SidebarController implements IController<SidebarComponent> {
                             if (onFileDoubleClick != null) {
                                 onFileDoubleClick.accept(fileToOpen);
                             }
-                        }else if (selectedItem != null){
+                        }else if (selectedItem != null && !Files.isDirectory(selectedItem.getValue())){
                             new Alert(Alert.AlertType.ERROR, "File not found, maybe delete/moved ").showAndWait();
                             TreeItem<Path> root = sidebarComponent.getFileTreeView().getRoot();
                             if (root != null) {
