@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,27 +117,24 @@ public class SidebarController implements IController<SidebarComponent> {
             syncChildren(rootItem, dirPath);
         }
 
-        fileWatcherService.setupDirectoryWatcher(dirPath, new EditorFileWatcherService.DirectoryChangeListener() {
-            @Override
-            public void onChange(Path watchedDir, WatchEvent.Kind<?> kind, Path relativePath) {
-                Path fullChanged = relativePath != null ? watchedDir.resolve(relativePath) : null;
-                if (kind == StandardWatchEventKinds.OVERFLOW) {
-                    scheduleSync(pathToTreeItem.get(watchedDir), watchedDir);
-                    return;
-                }
-                fileWatcherService.invalidateCache(watchedDir);
-                TreeItem<Path> parentItem = pathToTreeItem.get(watchedDir);
-                if (parentItem != null) {
-                    if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                        if (fullChanged != null) {
-                            TreeItem<Path> removed = pathToTreeItem.remove(fullChanged);
-                            if (removed != null && removed.getParent() != null) {
-                                Platform.runLater(() -> parentItem.getChildren().remove(removed));
-                            }
+        fileWatcherService.setupDirectoryWatcher(dirPath, (watchedDir, kind, relativePath) -> {
+            Path fullChanged = relativePath != null ? watchedDir.resolve(relativePath) : null;
+            if (kind == StandardWatchEventKinds.OVERFLOW) {
+                scheduleSync(pathToTreeItem.get(watchedDir), watchedDir);
+                return;
+            }
+            fileWatcherService.invalidateCache(watchedDir);
+            TreeItem<Path> parentItem = pathToTreeItem.get(watchedDir);
+            if (parentItem != null) {
+                if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
+                    if (fullChanged != null) {
+                        TreeItem<Path> removed = pathToTreeItem.remove(fullChanged);
+                        if (removed != null && removed.getParent() != null) {
+                            Platform.runLater(() -> parentItem.getChildren().remove(removed));
                         }
-                    } else if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        scheduleSync(parentItem, watchedDir);
                     }
+                } else if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+                    scheduleSync(parentItem, watchedDir);
                 }
             }
         });

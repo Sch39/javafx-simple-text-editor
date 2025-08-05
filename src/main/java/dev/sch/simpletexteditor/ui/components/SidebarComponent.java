@@ -31,6 +31,7 @@ public class SidebarComponent extends VBox {
 
         this.fileTreeView.setCellFactory(tc -> new TreeCell<>() {
             private TextField textField;
+            private final HBox editLayout = new HBox(2);
             private final StackPane arrowClickArea = new StackPane();
             private final StackPane iconWrapper = new StackPane();
             private final HBox cellLayout = new HBox(2);
@@ -65,9 +66,10 @@ public class SidebarComponent extends VBox {
                 iconWrapper.setMinWidth(Math.max(folderIconSize, fileIconSize));
                 iconWrapper.setPrefWidth(Math.max(folderIconSize, fileIconSize));
 
-                cellLayout.getChildren().addAll(arrowClickArea, iconWrapper);
                 cellLayout.setAlignment(Pos.CENTER_LEFT);
                 cellLayout.setPadding(new Insets(1, 2, 1, 0));
+
+                cellLayout.setAlignment(Pos.CENTER_LEFT);
 
                 setContentDisplay(ContentDisplay.LEFT);
             }
@@ -80,11 +82,10 @@ public class SidebarComponent extends VBox {
                     if (parent instanceof SidebarComponent sidebarComponent) {
                         if (getTreeItem() != null && getTreeItem().getValue() != null && sidebarComponent.isEditModeRequested()) {
                             super.startEdit();
-                            if (textField == null) {
-                                createTextField();
-                            }
-                            setText(null);
-                            setGraphic(textField);
+//
+                            editLayout.getChildren().clear();
+                            createEditLayout();
+                            setGraphic(editLayout);
                             textField.setText(getString());
                             textField.selectAll();
                             Platform.runLater(()->textField.requestFocus());
@@ -98,7 +99,10 @@ public class SidebarComponent extends VBox {
             public void cancelEdit() {
                 super.cancelEdit();
                 setText(getString());
+                cellLayout.getChildren().clear();
+                cellLayout.getChildren().addAll(arrowClickArea, iconWrapper);
                 setGraphic(cellLayout);
+                Platform.runLater(()->getFileTreeView().requestFocus());
             }
 
             @Override
@@ -109,15 +113,20 @@ public class SidebarComponent extends VBox {
                     setGraphic(null);
                 } else {
                     if (isEditing()) {
-                        if (textField != null) {
-                            textField.setText(getString());
-                        }
-                        setText(null);
-                        setGraphic(textField);
+                        editLayout.getChildren().clear();
+                        createEditLayout();
+                        textField.setText(getString());
+                        setGraphic(editLayout);
                     } else {
+                        cellLayout.getChildren().clear();
+                        cellLayout.getChildren().addAll(arrowClickArea, iconWrapper);
+
                         setText(getString());
                         setGraphic(cellLayout);
                         setGraphicIcons(item);
+                        if (getTreeView() != null && getTreeView().getSelectionModel().getSelectedItem() == getTreeItem()) {
+                            Platform.runLater(() -> getTreeView().requestFocus());
+                        }
                     }
                 }
             }
@@ -146,8 +155,12 @@ public class SidebarComponent extends VBox {
                 }
             }
 
-            private void createTextField() {
+            private void createEditLayout() {
                 textField = new TextField(getString());
+                editLayout.setAlignment(Pos.CENTER_LEFT);
+                editLayout.setPadding(new Insets(1, 2, 1, 0));
+                editLayout.getChildren().addAll(arrowClickArea, iconWrapper, textField);
+
                 textField.setOnKeyReleased(event -> {
                     if (event.getCode() == KeyCode.ENTER) {
                         Path parent = getItem().getParent();
