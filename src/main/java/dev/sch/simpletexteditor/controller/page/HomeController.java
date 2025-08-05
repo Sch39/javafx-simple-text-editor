@@ -13,6 +13,7 @@ import dev.sch.simpletexteditor.service.EditorFileService;
 import dev.sch.simpletexteditor.ui.view.HomeView;
 import dev.sch.simpletexteditor.util.DialogUtil;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Alert;
@@ -235,18 +236,27 @@ public class HomeController implements IController<HomeView> {
 
     private void handleOpenFile(Path fileToOpen){
         if (editorModel.getCurrentFilePath() != null && editorModel.getCurrentFilePath().equals(fileToOpen)){
+            Platform.runLater(()-> {
+                ctx.getEditorTextArea().positionCaret(10);
+                ctx.getEditorTextArea().requestFocus();
+            });
             return;
         }
         if (Files.exists(fileToOpen)){
             editorFileService.createOpenFileService(fileToOpen,
                     ()->{
-            editorModel.setCurrentFilePath(fileToOpen);
+                        editorModel.setCurrentFilePath(fileToOpen);
+                        Platform.runLater(()-> {
+                            ctx.getEditorTextArea().positionCaret(editorModel.getEditorContent().length());
+                            ctx.getEditorTextArea().requestFocus();
+                        });
+                        resetStatusAfterDelay("Ready", 1);
                     },
                     (e)->{
                         new Alert(Alert.AlertType.ERROR, "Failed open file: " + e.getMessage()).showAndWait();
                     }).start();
-            resetStatusAfterDelay("Ready", 1);
-        System.out.println("opened file: "+fileToOpen.getFileName().toString());
+
+            System.out.println("opened file: "+fileToOpen.getFileName().toString());
         }else {
             new Alert(Alert.AlertType.ERROR, "File not found: " + fileToOpen.toString()).showAndWait();
         }
