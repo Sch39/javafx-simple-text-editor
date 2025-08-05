@@ -8,6 +8,7 @@ import dev.sch.simpletexteditor.ui.components.SidebarComponent;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TreeItem;
+import javafx.scene.input.KeyCode;
 import lombok.Setter;
 
 import java.io.IOException;
@@ -39,7 +40,7 @@ public class SidebarController implements IController<SidebarComponent> {
     private static final long SYNC_DELAY_MS = 150;
 
 
-    public SidebarController(AppContext ctx){
+    public SidebarController(AppContext ctx) {
         this.ctx = ctx;
         this.sidebarComponent = new SidebarComponent();
         this.observableSettings = ctx.getObservableSettings();
@@ -54,22 +55,22 @@ public class SidebarController implements IController<SidebarComponent> {
     @Override
     public void initialize() {
         observableSettings.lastDirectoryProperty()
-                .addListener((obs, oldDir, newDir)->{
-                    if (newDir != null){
+                .addListener((obs, oldDir, newDir) -> {
+                    if (newDir != null) {
                         loadDirectory(newDir);
-                    }else {
+                    } else {
                         sidebarComponent.getFileTreeView().setRoot(null);
                         pathToTreeItem.clear();
                     }
                 });
 
-        if (observableSettings.getLastDirectory() != null){
+        if (observableSettings.getLastDirectory() != null) {
             loadDirectory(observableSettings.getLastDirectory());
         }
 
         sidebarComponent.getFileTreeView()
-                .setOnMouseClicked(e->{
-                    if (e.getClickCount() == 2){
+                .setOnMouseClicked(e -> {
+                    if (e.getClickCount() == 2) {
                         TreeItem<Path> selectedItem = sidebarComponent.getFileTreeView().getSelectionModel().getSelectedItem();
 
                         if (selectedItem != null && Files.isRegularFile(selectedItem.getValue())) {
@@ -78,7 +79,7 @@ public class SidebarController implements IController<SidebarComponent> {
                             if (onFileDoubleClick != null) {
                                 onFileDoubleClick.accept(fileToOpen);
                             }
-                        }else if (selectedItem != null && !Files.isDirectory(selectedItem.getValue())){
+                        } else if (selectedItem != null && !Files.isDirectory(selectedItem.getValue())) {
                             new Alert(Alert.AlertType.ERROR, "File not found, maybe delete/moved ").showAndWait();
                             TreeItem<Path> root = sidebarComponent.getFileTreeView().getRoot();
                             if (root != null) {
@@ -87,77 +88,81 @@ public class SidebarController implements IController<SidebarComponent> {
                         }
                     }
                 });
+
+        sidebarComponent.getFileTreeView().setOnEditCommit(event -> {
+            Path oldPath = event.getTreeItem().getValue();
+            Path newPath = event.getNewValue();
+
+            System.out.println("Rename file from " + oldPath.getFileName() + " to " + newPath.getFileName());
+        });
+
+        sidebarComponent.getFileTreeView().setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.F12) {
+                TreeItem<Path> selectedItem = sidebarComponent.getFileTreeView().getSelectionModel().getSelectedItem();
+                if (selectedItem != null && selectedItem.getValue() != null && selectedItem.getParent() != null) {
+                    sidebarComponent.setEditModeRequested(true);
+                    sidebarComponent.getFileTreeView().edit(selectedItem);
+                }
+                event.consume();
+            }
+        });
     }
 
-    private void loadDirectory(Path dirPath){
+    private void loadDirectory(Path dirPath) {
         TreeItem<Path> rootItem = createTreeItem(dirPath);
         sidebarComponent.getFileTreeView().setRoot(rootItem);
         sidebarComponent.getFileTreeView().setShowRoot(true);
         rootItem.setExpanded(true);
 
-        // initial sync children
         if (Files.isDirectory(dirPath)) {
             syncChildren(rootItem, dirPath);
         }
 
-        // watch root with contextual listener
         fileWatcherService.setupDirectoryWatcher(dirPath, new EditorFileWatcherService.DirectoryChangeListener() {
             @Override
             public void onChange(Path watchedDir, WatchEvent.Kind<?> kind, Path relativePath) {
                 Path fullChanged = relativePath != null ? watchedDir.resolve(relativePath) : null;
-
-                // jika overflow, sync entire watchedDir
                 if (kind == StandardWatchEventKinds.OVERFLOW) {
                     scheduleSync(pathToTreeItem.get(watchedDir), watchedDir);
                     return;
                 }
-
-                // invalidasi cache parent (watchedDir)
                 fileWatcherService.invalidateCache(watchedDir);
                 TreeItem<Path> parentItem = pathToTreeItem.get(watchedDir);
                 if (parentItem != null) {
                     if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                        // hapus node yang di-delete jika ada
                         if (fullChanged != null) {
                             TreeItem<Path> removed = pathToTreeItem.remove(fullChanged);
                             if (removed != null && removed.getParent() != null) {
                                 Platform.runLater(() -> parentItem.getChildren().remove(removed));
                             }
                         }
-                    } else if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                        // ada file/folder baru, sync parent untuk menambah child
-                        scheduleSync(parentItem, watchedDir);
-                    } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                        // bisa do refresh metadata atau resync parent
+                    } else if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
                         scheduleSync(parentItem, watchedDir);
                     }
                 }
-
-                // jika folder baru dibuat dan di-expand nanti, daftarkan watch-nya saat syncChildren
             }
         });
     }
 
-    private TreeItem<Path> createTreeItem(Path path){
-        if (pathToTreeItem.containsKey(path)){
+    private TreeItem<Path> createTreeItem(Path path) {
+        if (pathToTreeItem.containsKey(path)) {
             return pathToTreeItem.get(path);
         }
         TreeItem<Path> item = new TreeItem<>(path);
         pathToTreeItem.put(path, item);
 
-        if (Files.isDirectory(path)){
+        if (Files.isDirectory(path)) {
             item.setExpanded(false);
-
-            fileWatcherService.hasChildrenAsync(path, hasChildren->{
-            if (hasChildren){
-                item.getChildren().add(new TreeItem<>());
-                item.expandedProperty()
-                        .addListener((obs, oldVal, newVal)->{
-                            if (newVal && item.getChildren().size() == 1 && item.getChildren().getFirst().getValue() == null){
-                                syncChildren(item, path);
-                            }
-                        });
-            }
+            fileWatcherService.hasChildrenAsync(path, hasChildren -> {
+                if (hasChildren) {
+                    item.getChildren().add(new TreeItem<>());
+                    item.expandedProperty()
+                            .addListener((obs, oldVal, newVal) -> {
+                        if (newVal && item.getChildren().size() == 1 && item.getChildren().getFirst().getValue() == null) {
+                            syncChildren(item, path);
+                        }
+                    });
+                }
             });
         }
         return item;
@@ -166,9 +171,8 @@ public class SidebarController implements IController<SidebarComponent> {
     private void syncChildren(TreeItem<Path> parentItem, Path dirPath) {
         if (parentItem.getChildren().isEmpty()) {
             TreeItem<Path> loading = new TreeItem<>(Path.of("Loading..."));
-            parentItem.getChildren().setAll(loading);
+            parentItem.getChildren().setAll(List.of(loading));
         }
-
         fileWatcherService.loadDirectoryAsync(
                 dirPath,
                 (sortedPaths) -> {
@@ -177,11 +181,10 @@ public class SidebarController implements IController<SidebarComponent> {
                         Path val = child.getValue();
                         if (val != null) existing.put(val, child);
                     }
-
                     List<TreeItem<Path>> updatedChildren = new ArrayList<>();
                     for (Path entry : sortedPaths) {
                         if (existing.containsKey(entry)) {
-                            updatedChildren.add(existing.get(entry)); // reuse node
+                            updatedChildren.add(existing.get(entry));
                         } else {
                             TreeItem<Path> child = createTreeItem(entry);
                             updatedChildren.add(child);
@@ -193,7 +196,6 @@ public class SidebarController implements IController<SidebarComponent> {
                                             scheduleSync(pathToTreeItem.get(watchedDir), watchedDir);
                                             return;
                                         }
-                                        // parent is the watchedDir
                                         TreeItem<Path> parentOfSub = pathToTreeItem.get(watchedDir);
                                         fileWatcherService.invalidateCache(watchedDir);
                                         if (parentOfSub != null) {
@@ -202,9 +204,7 @@ public class SidebarController implements IController<SidebarComponent> {
                                                 if (removed != null && removed.getParent() != null) {
                                                     Platform.runLater(() -> parentOfSub.getChildren().remove(removed));
                                                 }
-                                            } else if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                                                scheduleSync(parentOfSub, watchedDir);
-                                            } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+                                            } else if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
                                                 scheduleSync(parentOfSub, watchedDir);
                                             }
                                         }
@@ -215,7 +215,6 @@ public class SidebarController implements IController<SidebarComponent> {
                             }
                         }
                     }
-
                     Platform.runLater(() -> parentItem.getChildren().setAll(updatedChildren));
                     return null;
                 },
@@ -226,13 +225,13 @@ public class SidebarController implements IController<SidebarComponent> {
         );
     }
 
-    private void scheduleSync(TreeItem<Path> item, Path path){
+    private void scheduleSync(TreeItem<Path> item, Path path) {
         if (item == null) return;
-        Runnable task = ()-> syncChildren(item, path);
+        Runnable task = () -> syncChildren(item, path);
         pendingSyncs.put(path, task);
-        scheduler.schedule(()->{
+        scheduler.schedule(() -> {
             Runnable current = pendingSyncs.get(path);
-            if (current == task){
+            if (current == task) {
                 current.run();
                 pendingSyncs.remove(path);
             }

@@ -2,16 +2,16 @@ package dev.sch.simpletexteditor.ui.components;
 
 import dev.sch.simpletexteditor.SimpleTextEditorApp;
 import dev.sch.simpletexteditor.util.IconLoader;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,13 +20,17 @@ import java.util.Objects;
 @Getter
 public class SidebarComponent extends VBox {
     private final TreeView<Path> fileTreeView;
+    @Setter
+    private boolean isEditModeRequested = false;
 
-    public SidebarComponent(){
+    public SidebarComponent() {
         this.fileTreeView = new TreeView<>();
         this.fileTreeView.setPrefWidth(200);
         this.fileTreeView.setShowRoot(false);
+        this.fileTreeView.setEditable(true);
 
         this.fileTreeView.setCellFactory(tc -> new TreeCell<>() {
+            private TextField textField;
             private final StackPane arrowClickArea = new StackPane();
             private final StackPane iconWrapper = new StackPane();
             private final HBox cellLayout = new HBox(2);
@@ -52,8 +56,8 @@ public class SidebarComponent extends VBox {
                 arrowClickArea.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
                     if (getTreeItem() != null && !getTreeItem().isLeaf()) {
                         getTreeItem().setExpanded(!getTreeItem().isExpanded());
-                        event.consume();
                     }
+                    event.consume();
                 });
 
                 iconWrapper.getChildren().addAll(folderIcon, fileIcon);
@@ -69,29 +73,65 @@ public class SidebarComponent extends VBox {
             }
 
             @Override
+            public void startEdit() {
+                TreeView<Path> treeView = getTreeView();
+                if (treeView != null) {
+                    VBox parent = (VBox) treeView.getParent();
+                    if (parent instanceof SidebarComponent sidebarComponent) {
+                        if (getTreeItem() != null && getTreeItem().getValue() != null && sidebarComponent.isEditModeRequested()) {
+                            super.startEdit();
+                            if (textField == null) {
+                                createTextField();
+                            }
+                            setText(null);
+                            setGraphic(textField);
+                            textField.setText(getString());
+                            textField.selectAll();
+                            Platform.runLater(()->textField.requestFocus());
+                            sidebarComponent.setEditModeRequested(false);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void cancelEdit() {
+                super.cancelEdit();
+                setText(getString());
+                setGraphic(cellLayout);
+            }
+
+            @Override
             protected void updateItem(Path item, boolean empty) {
                 super.updateItem(item, empty);
-
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);
-                    return;
+                } else {
+                    if (isEditing()) {
+                        if (textField != null) {
+                            textField.setText(getString());
+                        }
+                        setText(null);
+                        setGraphic(textField);
+                    } else {
+                        setText(getString());
+                        setGraphic(cellLayout);
+                        setGraphicIcons(item);
+                    }
                 }
+            }
 
-                setText(item.getFileName() != null ? item.getFileName().toString() : item.toString());
-
+            private void setGraphicIcons(Path item) {
                 TreeItem<Path> treeItem = getTreeItem();
                 boolean isDirectory = Files.isDirectory(item);
-
                 arrowIcon.setVisible(false);
                 folderIcon.setVisible(false);
                 fileIcon.setVisible(false);
                 arrowIcon.setImage(null);
-
                 if (isDirectory) {
                     folderIcon.setVisible(true);
                     folderIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("folder.png", folderIconSize)).getImage());
-
                     if (treeItem != null && !treeItem.getChildren().isEmpty()) {
                         arrowIcon.setVisible(true);
                         if (treeItem.isExpanded()) {
@@ -104,16 +144,32 @@ public class SidebarComponent extends VBox {
                     fileIcon.setVisible(true);
                     fileIcon.setImage(Objects.requireNonNull(IconLoader.getIcon("file.png", fileIconSize)).getImage());
                 }
+            }
 
-                setGraphic(cellLayout);
+            private void createTextField() {
+                textField = new TextField(getString());
+                textField.setOnKeyReleased(event -> {
+                    if (event.getCode() == KeyCode.ENTER) {
+                        Path parent = getItem().getParent();
+                        if (parent != null) {
+                            commitEdit(parent.resolve(textField.getText()));
+                        } else {
+                            cancelEdit();
+                        }
+                    } else if (event.getCode() == KeyCode.ESCAPE) {
+                        cancelEdit();
+                    }
+                });
+            }
+
+            private String getString() {
+                return getItem() == null ? "" : getItem().getFileName() != null ? getItem().getFileName().toString() : "";
             }
         });
 
         this.getStyleClass().add("sidebar-component");
         this.setPadding(new Insets(10));
         this.getChildren().add(this.fileTreeView);
-
-        this.getStylesheets()
-                .add(Objects.requireNonNull(SimpleTextEditorApp.class.getResource("styles/component/sidebar-component.css")).toExternalForm());
+        this.getStylesheets().add(Objects.requireNonNull(SimpleTextEditorApp.class.getResource("styles/component/sidebar-component.css")).toExternalForm());
     }
 }
