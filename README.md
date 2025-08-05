@@ -10,7 +10,7 @@ Sebuah editor teks sederhana yang dibangun menggunakan JavaFX, dirancang untuk b
   - Simpan file yang sedang diedit.
   - Simpan file dengan nama baru (Save As).
   - Buka folder dan tampilkan daftar file di dalamnya (v).
-  - rename file name with 1 click mouse (ongoing).
+  - rename file/folder name with f12 (v).
   
 - Antarmuka Pengguna Intuitif:
     - Tanda * pada nama file menunjukkan adanya perubahan yang belum disimpan.
