@@ -134,6 +134,7 @@ public class HomeController implements IController<HomeView> {
         if (!editorModel.isFileModified()){
             editorModel.newFile();
             ctx.getEditorTextArea().requestFocus();
+            sidebarController.getView().getFileTreeView().getSelectionModel().clearSelection();
             return;
         }
 
