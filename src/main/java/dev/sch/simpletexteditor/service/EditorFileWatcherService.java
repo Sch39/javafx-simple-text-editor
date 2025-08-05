@@ -30,6 +30,11 @@ public class EditorFileWatcherService {
     private final Map<Path, Runnable> pendingDebounces = new ConcurrentHashMap<>();
     private static final long DEBOUNCE_MS = 150;
 
+    public EditorFileWatcherService(){
+        ServiceManager.register(fileTaskExecutor);
+        ServiceManager.register(debounceExecutor);
+    }
+
     public void invalidateCache(Path dir){
         cache.remove(dir);
     }
@@ -76,6 +81,9 @@ public class EditorFileWatcherService {
 
             watchServices.put(dirToWatch, watcher);
             watcherExecutors.put(dirToWatch, executor);
+
+            ServiceManager.register(watcher);
+            ServiceManager.register(executor);
 
             executor.execute(()->{
                 try {

@@ -28,7 +28,7 @@ public class Router {
         rootPane.setCenter(controller.getView());
     }
 
-    private IController<?> getOrCreateController(Routes route) {
+    public IController<?> getOrCreateController(Routes route) {
         return controllerCache.computeIfAbsent(route, r -> {
             try {
                 Constructor<?> constructor = r.getControllerClass().getConstructor(AppContext.class);

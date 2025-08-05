@@ -4,6 +4,7 @@ import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.controller.IController;
 import dev.sch.simpletexteditor.model.ObservableSettings;
 import dev.sch.simpletexteditor.service.EditorFileWatcherService;
+import dev.sch.simpletexteditor.service.ServiceManager;
 import dev.sch.simpletexteditor.ui.components.SidebarComponent;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -35,7 +36,12 @@ public class SidebarController implements IController<SidebarComponent> {
     private Consumer<Path> onFileDoubleClick;
 
     private final Map<Path, TreeItem<Path>> pathToTreeItem = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, runnable->{
+        Thread t = new Thread(runnable);
+        t.setName("scheduler-sidebar-controller");
+        t.setDaemon(false); // or true
+        return t;
+    });
     private final Map<Path, Runnable> pendingSyncs = new ConcurrentHashMap<>();
     private static final long SYNC_DELAY_MS = 150;
 
@@ -47,6 +53,8 @@ public class SidebarController implements IController<SidebarComponent> {
         this.sidebarComponent = new SidebarComponent();
         this.observableSettings = ctx.getObservableSettings();
         this.fileWatcherService = ctx.getFileWatcherService();
+
+        ServiceManager.register(scheduler);
     }
 
     @Override
@@ -240,5 +248,10 @@ public class SidebarController implements IController<SidebarComponent> {
                 pendingSyncs.remove(path);
             }
         }, SYNC_DELAY_MS, TimeUnit.MILLISECONDS);
+    }
+
+    public void shutdown(){
+        System.out.println("Shutting down sidebar controller...");
+        scheduler.shutdownNow();
     }
 }

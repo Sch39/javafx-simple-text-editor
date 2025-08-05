@@ -4,6 +4,7 @@ import dev.sch.simpletexteditor.context.AppContext;
 import dev.sch.simpletexteditor.core.Router;
 import dev.sch.simpletexteditor.router.Routes;
 import dev.sch.simpletexteditor.model.EditorModel;
+import dev.sch.simpletexteditor.service.ServiceManager;
 import dev.sch.simpletexteditor.util.SettingsStore;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -35,32 +36,12 @@ public class SimpleTextEditorApp extends Application {
 //    file choosers
     private DirectoryChooser directoryChooser;
     private FileChooser fileChooser;
+    private AppContext appContext;
 
     @Override
     public void start(Stage stage) throws IOException, InterruptedException {
-//        editorTextArea = new TextArea();
-//        editorTextArea.setWrapText(true);
-//
-////        bind textarea to model
-//        editorTextArea.textProperty().bindBidirectional(model.editorContentProperty());
-//
-//        fileNameLabel = new Label();
-//        fileNameLabel.textProperty().bind(
-//                Bindings.when(model.fileModifiedProperty())
-//                        .then(model.currentFileNameProperty()+" *")
-//                        .otherwise(model.currentFileNameProperty())
-//        );
-//        fileNameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
-//
-//        progressBar = new ProgressBar();
-//        progressBar.setPrefWidth(200);
-//        progressBar.setVisible(false);
-//
-////        toolbar
-//        HBox toolbar = new ToolbarComponent();
-
         BorderPane root = new BorderPane();
-        AppContext appContext = new AppContext();
+        appContext = new AppContext();
         Router router = new Router(root, appContext);
 
         Scene scene = new Scene(root, 900, 600);
@@ -73,5 +54,14 @@ public class SimpleTextEditorApp extends Application {
 
     public static void main(String[] args) {
         launch();
+    }
+
+    @Override
+    public void stop(){
+        ServiceManager.shutdownAll();
+
+        Thread.getAllStackTraces().keySet().forEach(t -> {
+            System.out.println(t.getName() + " - daemon: " + t.isDaemon());
+        });
     }
 }

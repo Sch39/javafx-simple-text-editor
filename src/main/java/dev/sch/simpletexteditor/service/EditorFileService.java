@@ -64,6 +64,7 @@ public class EditorFileService {
             }
         }));
 
+        ServiceManager.register(service);
         return service;
     }
 
@@ -105,6 +106,7 @@ public class EditorFileService {
             }
         }));
 
+        ServiceManager.register(service);
         return service;
     }
 
@@ -135,6 +137,7 @@ public class EditorFileService {
             }
         }));
 
+        ServiceManager.register(service);
         return service;
     }
 }
