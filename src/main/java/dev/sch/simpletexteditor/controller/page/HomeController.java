@@ -78,7 +78,9 @@ public class HomeController implements IController<HomeView> {
         toolbarController.setOnSaveFileRequested(this::handleSaveFile);
         toolbarController.setOnSaveAsFileRequested(this::handleSaveAsFile);
         toolbarController.setOnOpenFolderRequested(this::handleOpenFolder);
-        this.sidebarController.setOnFileDoubleClick(this::handleOpenFile);
+
+        sidebarController.setOnFileDoubleClick(this::handleOpenFile);
+        sidebarController.setOnMoveEditCommit(this::onMoveEditCommit);
 
         //        when view added to scene
         viewAddedToSceneProperty();
@@ -247,6 +249,28 @@ public class HomeController implements IController<HomeView> {
         System.out.println("opened file: "+fileToOpen.getFileName().toString());
         }else {
             new Alert(Alert.AlertType.ERROR, "File not found: " + fileToOpen.toString()).showAndWait();
+        }
+    }
+
+    private void onMoveEditCommit(Path sourcePath, Path targetPath){
+        if (sourcePath.equals(targetPath)){
+            return;
+        }
+        if (Files.exists(sourcePath)){
+            editorFileService.createMoveFileService(
+                    sourcePath,
+                    targetPath,
+                    ()->{
+                        System.out.println("Success move: "+sourcePath+" to "+targetPath);
+                    },
+                    e->{
+                        if (sourcePath.getFileName().equals(targetPath.getFileName())){
+                            new Alert(Alert.AlertType.ERROR, "Failed move: " + sourcePath+" to "+targetPath).showAndWait();
+                        }else {
+                            new Alert(Alert.AlertType.ERROR, "Failed rename: " + sourcePath.getFileName()+" to "+targetPath.getFileName()).showAndWait();
+                        }
+                    }
+            ).start();
         }
     }
 

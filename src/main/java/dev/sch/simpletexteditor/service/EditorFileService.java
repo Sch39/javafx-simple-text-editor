@@ -107,4 +107,34 @@ public class EditorFileService {
 
         return service;
     }
+
+    public Service<Void> createMoveFileService(Path sourcePath, Path targetPath, Runnable onSuccess, Consumer<Throwable> onFailed){
+        MoveFileService service = new MoveFileService(sourcePath, targetPath);
+        progressModel.progressProperty().bind(service.progressProperty());
+        progressModel.visibleProperty().set(true);
+
+        service.setOnSucceeded((e)->Platform.runLater(()->{
+            progressModel.progressProperty().unbind();
+            progressModel.visibleProperty().set(false);
+
+            if (onSuccess != null){
+                onSuccess.run();
+            }
+        }));
+
+        service.setOnFailed(e->Platform.runLater(()->{
+            progressModel.progressProperty().bind(service.progressProperty());
+            progressModel.visibleProperty().set(true);
+
+            Throwable ex = service.getException();
+            if (ex != null){
+                ex.printStackTrace();
+                if (onFailed != null){
+                    onFailed.accept(ex);
+                }
+            }
+        }));
+
+        return service;
+    }
 }

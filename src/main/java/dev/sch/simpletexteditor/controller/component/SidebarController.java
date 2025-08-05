@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class SidebarController implements IController<SidebarComponent> {
@@ -38,6 +39,8 @@ public class SidebarController implements IController<SidebarComponent> {
     private final Map<Path, Runnable> pendingSyncs = new ConcurrentHashMap<>();
     private static final long SYNC_DELAY_MS = 150;
 
+    @Setter
+    private BiConsumer<Path, Path> onMoveEditCommit;
 
     public SidebarController(AppContext ctx) {
         this.ctx = ctx;
@@ -91,7 +94,9 @@ public class SidebarController implements IController<SidebarComponent> {
         sidebarComponent.getFileTreeView().setOnEditCommit(event -> {
             Path oldPath = event.getTreeItem().getValue();
             Path newPath = event.getNewValue();
-
+            if (onMoveEditCommit != null){
+                onMoveEditCommit.accept(oldPath, newPath);
+            }
             System.out.println("Rename file from " + oldPath.getFileName() + " to " + newPath.getFileName());
         });
 
