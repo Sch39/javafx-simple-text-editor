@@ -174,7 +174,7 @@ public class EditorFileWatcherService {
         }, DEBOUNCE_MS, TimeUnit.MILLISECONDS);
     }
 
-    private void closeWatcher(Path dir) {
+    public void closeWatcher(Path dir) {
         WatchService ws = watchServices.remove(dir);
         if (ws != null){
             try {

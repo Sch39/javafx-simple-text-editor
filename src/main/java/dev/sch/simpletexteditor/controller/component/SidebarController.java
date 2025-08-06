@@ -106,7 +106,11 @@ public class SidebarController implements IController<SidebarComponent> {
         sidebarComponent.getFileTreeView().setOnEditCommit(event -> {
             Path oldPath = event.getTreeItem().getValue();
             Path newPath = event.getNewValue();
-            if (onMoveEditCommit != null){
+            if (onMoveEditCommit != null && !oldPath.equals(newPath)){
+                if (Files.isDirectory(oldPath)){
+                    fileWatcherService.closeWatcher(oldPath);
+
+                }
                 onMoveEditCommit.accept(oldPath, newPath);
             }
             System.out.println("Rename file from " + oldPath.getFileName() + " to " + newPath.getFileName());
