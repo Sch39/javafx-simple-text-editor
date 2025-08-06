@@ -19,6 +19,8 @@ public class MoveFileService extends Service<Void> {
         return new Task<Void>() {
             @Override
             protected Void call() throws Exception {
+                Thread.currentThread().setName("File-Move-Worker");
+
                 if (sourcePath == null || destinationPath == null) {
                     throw new IllegalArgumentException("Source and destination paths cannot be null.");
                 }

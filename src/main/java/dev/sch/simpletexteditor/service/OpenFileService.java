@@ -18,6 +18,7 @@ public class OpenFileService extends Service<String> {
         return new Task<String>() {
             @Override
             protected String call() throws Exception {
+                Thread.currentThread().setName("File-Open-Worker");
                 updateProgress(0.1, 1.0);
                 updateMessage("Opening file: " + path.getFileName());
                 String fileContent = Files.readString(path);

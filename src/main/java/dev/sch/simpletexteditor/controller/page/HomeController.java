@@ -29,7 +29,6 @@ import javafx.util.Duration;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -140,13 +139,11 @@ public class HomeController implements IController<HomeView> {
 
         DialogUtil.showSaveConfirmationDialog(
                 editorModel.getCurrentFileName(),
-                () -> {
-                    handleSaveFile(() -> {
-                        editorModel.newFile();
-                        ctx.getEditorTextArea().requestFocus();
-                        System.out.println("File saved, opening new file.");
-                    });
-                },
+                () -> handleSaveFile(() -> {
+                    editorModel.newFile();
+                    ctx.getEditorTextArea().requestFocus();
+                    System.out.println("File saved, opening new file.");
+                }),
                 () -> {
                     editorModel.newFile();
                     System.out.println("Changes discarded, opening new file.");
@@ -164,7 +161,7 @@ public class HomeController implements IController<HomeView> {
             handleSaveAsFile(onSuccessCallback);
             return;
         }
-        editorFileService.createSaveFileService(
+        editorFileService.saveFile(
                 currentFilePath,
                 editorModel.getEditorContent(),
                 ()->{
@@ -180,7 +177,7 @@ public class HomeController implements IController<HomeView> {
                     resetStatusAfterDelay("Ready", 1);
 
                 }
-        ).start();
+        );
     }
 
     private void handleSaveAsFile(){
@@ -200,11 +197,11 @@ public class HomeController implements IController<HomeView> {
         File file = fileChooser.showSaveDialog(ctx.getEditorTextArea().getScene().getWindow());
         if (file != null){
             Path newFilePath = file.toPath();
-            editorFileService.createSaveFileService(
+            editorFileService.saveFile(
                     newFilePath,
                     editorModel.getEditorContent(),
                     ()->{
-                        System.out.println("Successfully saved file as: " + newFilePath.toString()+", name: "+editorModel.getCurrentFileName());
+                        System.out.println("Successfully saved file as: " + newFilePath +", name: "+editorModel.getCurrentFileName());
                         resetStatusAfterDelay("Ready", 1);
                         if (onSuccessCallback != null){
                             onSuccessCallback.run();
@@ -215,7 +212,7 @@ public class HomeController implements IController<HomeView> {
                         resetStatusAfterDelay("Ready", 1);
 
                     }
-            ).start();
+            );
         }else {
             System.out.println("Cancelling save");
         }
@@ -244,7 +241,7 @@ public class HomeController implements IController<HomeView> {
             return;
         }
         if (Files.exists(fileToOpen)){
-            editorFileService.createOpenFileService(fileToOpen,
+            editorFileService.openFile(fileToOpen,
                     ()->{
                         editorModel.setCurrentFilePath(fileToOpen);
                         Platform.runLater(()-> {
@@ -253,13 +250,11 @@ public class HomeController implements IController<HomeView> {
                         });
                         resetStatusAfterDelay("Ready", 1);
                     },
-                    (e)->{
-                        new Alert(Alert.AlertType.ERROR, "Failed open file: " + e.getMessage()).showAndWait();
-                    }).start();
+                    (e)-> new Alert(Alert.AlertType.ERROR, "Failed open file: " + e.getMessage()).showAndWait());
 
             System.out.println("opened file: "+fileToOpen.getFileName().toString());
         }else {
-            new Alert(Alert.AlertType.ERROR, "File not found: " + fileToOpen.toString()).showAndWait();
+            new Alert(Alert.AlertType.ERROR, "File not found: " + fileToOpen).showAndWait();
         }
     }
 
@@ -268,12 +263,10 @@ public class HomeController implements IController<HomeView> {
             return;
         }
         if (Files.exists(sourcePath)){
-            editorFileService.createMoveFileService(
+            editorFileService.moveFile(
                     sourcePath,
                     targetPath,
-                    ()->{
-                        System.out.println("Success move: "+sourcePath+" to "+targetPath);
-                    },
+                    ()-> System.out.println("Success move: "+sourcePath+" to "+targetPath),
                     e->{
                         if (sourcePath.getFileName().equals(targetPath.getFileName())){
                             new Alert(Alert.AlertType.ERROR, "Failed move: " + sourcePath+" to "+targetPath).showAndWait();
@@ -281,7 +274,7 @@ public class HomeController implements IController<HomeView> {
                             new Alert(Alert.AlertType.ERROR, "Failed rename: " + sourcePath.getFileName()+" to "+targetPath.getFileName()).showAndWait();
                         }
                     }
-            ).start();
+            );
         }
     }
 
@@ -321,18 +314,14 @@ public class HomeController implements IController<HomeView> {
                 .getAccelerators()
                 .put(
                 new KeyCodeCombination(KeyCode.Z, KeyCombination.CONTROL_DOWN),
-                () -> {
-                    ctx.getEditorTextArea().undo();
-                }
+                () -> ctx.getEditorTextArea().undo()
         );
 
         view.getScene()
                 .getAccelerators()
                 .put(
                 new KeyCodeCombination(KeyCode.Y, KeyCombination.CONTROL_DOWN),
-                () -> {
-                    ctx.getEditorTextArea().redo();
-                }
+                () -> ctx.getEditorTextArea().redo()
         );
 
         view.getScene()
@@ -367,7 +356,7 @@ public class HomeController implements IController<HomeView> {
             return originalFileName;
         }
 
-        String nameWithoutExtension = "";
+        String nameWithoutExtension;
         String extension = "";
         int dotIndex = originalFileName.lastIndexOf('.');
         if (dotIndex > 0) {
