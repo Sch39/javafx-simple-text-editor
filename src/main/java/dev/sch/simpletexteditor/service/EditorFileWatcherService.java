@@ -19,14 +19,14 @@ public class EditorFileWatcherService {
     }
 
     private final Map<Path, List<Path>> cache = new ConcurrentHashMap<>();
-    private final ExecutorService fileTaskExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService fileTaskExecutor = Executors.newCachedThreadPool(runnable-> new Thread(runnable, "Watcher-File-Task-Worker"));
 
     private final Map<Path, WatchService> watchServices = new ConcurrentHashMap<>();
     private final Map<Path, ExecutorService> watcherExecutors = new ConcurrentHashMap<>();
     private final Map<Path, List<DirectoryChangeListener>> listeners = new ConcurrentHashMap<>();
 
 //    debounce per-directory updates
-    private final ScheduledExecutorService debounceExecutor = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService debounceExecutor = Executors.newScheduledThreadPool(1, runnable-> new Thread(runnable, "Watcher-Debounce-Task-Worker"));
     private final Map<Path, Runnable> pendingDebounces = new ConcurrentHashMap<>();
     private static final long DEBOUNCE_MS = 150;
 
@@ -37,6 +37,18 @@ public class EditorFileWatcherService {
 
     public void invalidateCache(Path dir){
         cache.remove(dir);
+    }
+    public void stopWatchingAllDirectoriesExceptCurrent(Path newDir){
+        List<Path> dirsToStop = new ArrayList<>();
+        for (Path watchedDir : watchServices.keySet()) {
+            if (!watchedDir.equals(newDir) && !watchedDir.startsWith(newDir)) {
+                dirsToStop.add(watchedDir);
+            }
+        }
+
+        for (Path dirToStop : dirsToStop) {
+            closeWatcher(dirToStop);
+        }
     }
 
     public void loadDirectoryAsync(Path dirPath, Function<List<Path>, Void> onSucceeded, Function<Exception, Void> onFailed){
@@ -71,7 +83,7 @@ public class EditorFileWatcherService {
 
         try {
             WatchService watcher = FileSystems.getDefault().newWatchService();
-            ExecutorService executor = Executors.newSingleThreadExecutor();
+            ExecutorService executor = Executors.newSingleThreadExecutor(runnable-> new Thread(runnable, "Watcher-Dir-"+dirToWatch.getFileName()));
             dirToWatch.register(
                     watcher,
                     StandardWatchEventKinds.ENTRY_CREATE,
@@ -173,8 +185,9 @@ public class EditorFileWatcherService {
         }
         ExecutorService es = watcherExecutors.remove(dir);
         if (es != null)
-            es.shutdown();
+            es.shutdownNow();
 
         listeners.remove(dir);
+        cache.remove(dir);
     }
 }

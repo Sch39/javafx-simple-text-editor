@@ -38,7 +38,7 @@ public class SidebarController implements IController<SidebarComponent> {
     private final Map<Path, TreeItem<Path>> pathToTreeItem = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, runnable->{
         Thread t = new Thread(runnable);
-        t.setName("scheduler-sidebar-controller");
+        t.setName("Scheduler-Sidebar-Worker");
         t.setDaemon(false); // or true
         return t;
     });
@@ -67,6 +67,7 @@ public class SidebarController implements IController<SidebarComponent> {
         observableSettings.lastDirectoryProperty()
                 .addListener((obs, oldDir, newDir) -> {
                     if (newDir != null) {
+                        fileWatcherService.stopWatchingAllDirectoriesExceptCurrent(newDir);
                         loadDirectory(newDir);
                     } else {
                         sidebarComponent.getFileTreeView().setRoot(null);
